@@ -1,20 +1,20 @@
 import AppKit
-import SwiftData
+import PortholeKit
 import SwiftUI
 
 // Porthole
-//   Porthole                      the app
-//   APP_STORE=<file> Porthole     use another database (tests, experiments)
-//   APP_SNAPSHOT=<dir> Porthole   save a PNG of every sidebar page and Settings tab in light and dark mode, then quit
-//   APP_SEED=1 Porthole           fill an empty /tmp store with sample items (tools/snap.sh)
-//   Porthole --selftest           run the self-test on a /tmp store and quit with 0 or 1 (tools/selftest.sh)
+//   Porthole                      the app, connected to the server in Settings
+//   APP_STORE=<file> Porthole     test mode: sample containers, nothing saved (tests, snapshots)
+//   APP_SNAPSHOT=<dir> Porthole   save a PNG of sample containers and every Settings tab in light and dark mode, then quit
+//   APP_SEED=1 Porthole           sample data (always on in test mode)
+//   Porthole --selftest           run the self-test on sample data and quit with 0 or 1 (tools/selftest.sh)
 //   APP_ACCENT=<id> Porthole      run with another accent from Theme.all (UI/Theme.swift)
 //   APP_GRID=1 Porthole           draw the 8 pt grid and the layout probes over the window
 
 @main
 struct PortholeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
-    @State private var model = AppModel(container: Store.makeContainer())
+    @State private var model = AppModel()
 
     var body: some Scene {
         Window("Porthole", id: "main") {
@@ -24,15 +24,31 @@ struct PortholeApp: App {
                 .overlay { if GridOverlay.enabled { GridOverlay() } }
                 .frame(minWidth: 760, minHeight: 480)
         }
-        .modelContainer(model.container)
-        .defaultSize(width: 1100, height: 720)
+        .defaultSize(width: 1180, height: 760)
         .windowToolbarStyle(.unified)
         .commands {
             SidebarCommands()
             ToolbarCommands()
-            CommandGroup(replacing: .newItem) {
-                Button("New Item") { model.addItem() }
-                    .keyboardShortcut("n")
+            CommandGroup(replacing: .newItem) {}
+            CommandMenu("Container") {
+                Button("Start", systemImage: "play") { model.request(.start) }
+                    .keyboardShortcut("s", modifiers: [.command, .option])
+                    .disabled(!model.canPerform(.start))
+                Button("Stop…", systemImage: "stop") { model.request(.stop) }
+                    .keyboardShortcut(".", modifiers: [.command, .option])
+                    .disabled(!model.canPerform(.stop))
+                Button("Restart", systemImage: "arrow.clockwise") { model.request(.restart) }
+                    .keyboardShortcut("r", modifiers: [.command, .option])
+                    .disabled(!model.canPerform(.restart))
+                Divider()
+                Button("Open Web Page", systemImage: "safari") {
+                    if let url = model.webUI() { NSWorkspace.shared.open(url) }
+                }
+                .keyboardShortcut("o")
+                .disabled(model.webUI() == nil)
+                Divider()
+                Button("Reconnect", systemImage: "arrow.triangle.2.circlepath") { model.reconnect() }
+                    .keyboardShortcut("r", modifiers: [.command, .shift])
             }
         }
 
@@ -60,27 +76,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-/// Where the data lives: ~/Library/Application Support/Porthole/Porthole.store
+/// Test mode: APP_STORE set (to a file in /tmp) means sample data and no
+/// saved settings. Porthole keeps no database of its own.
 enum Store {
-    /// True when APP_STORE points somewhere else (tests, snapshots, seed data).
     static var isOverridden: Bool {
         !(ProcessInfo.processInfo.environment["APP_STORE"] ?? "").isEmpty
-    }
-
-    static var url: URL {
-        if let path = ProcessInfo.processInfo.environment["APP_STORE"], !path.isEmpty {
-            return URL(fileURLWithPath: path)
-        }
-        let dir = URL.applicationSupportDirectory.appending(path: "Porthole", directoryHint: .isDirectory)
-        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
-        return dir.appending(path: "Porthole.store")
-    }
-
-    static func makeContainer() -> ModelContainer {
-        do {
-            return try ModelContainer(for: Item.self, configurations: ModelConfiguration(url: url))
-        } catch {
-            fatalError("Could not open the database at \(url.path): \(error)")
-        }
     }
 }

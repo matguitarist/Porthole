@@ -1,0 +1,235 @@
+import Foundation
+
+public enum ContainerAction: String, Sendable, CaseIterable {
+    case start, stop, restart
+}
+
+public enum DockerError: LocalizedError, Equatable {
+    case command(status: Int32, message: String)
+
+    public var errorDescription: String? {
+        switch self {
+        case .command(let status, let message):
+            let text = message.trimmingCharacters(in: .whitespacesAndNewlines)
+            if status == 255 { return text.isEmpty ? "Couldn't connect over SSH." : text }
+            return text.isEmpty ? "The command failed (exit code \(status))." : text
+        }
+    }
+}
+
+/// What the app needs from Docker. `SSHDocker` talks to a server;
+/// `DemoDocker` serves sample data for snapshots and the self-test.
+public protocol DockerClient: Sendable {
+    func containers() async throws -> [Container]
+    func inspect(_ name: String) async throws -> ContainerState
+    /// Raw `docker logs -f -t` lines, newest `tail` first, or those after `since`.
+    func logs(_ name: String, tail: Int, since: Date?) -> AsyncThrowingStream<String, Error>
+    /// Raw `docker events` JSON lines for containers.
+    func events() -> AsyncThrowingStream<String, Error>
+    /// Raw `docker stats` JSON lines, a round for all running containers every two seconds.
+    func stats() -> AsyncThrowingStream<String, Error>
+    func perform(_ action: ContainerAction, on name: String) async throws
+}
+
+/// Docker on another machine, through the `docker` command over SSH. All
+/// commands share one SSH connection (a ControlMaster), so a new stream
+/// costs no new login.
+public actor SSHDocker: DockerClient {
+    public nonisolated let target: String
+    public nonisolated let identityFile: String?
+    private var masterReady = false
+
+    /// - Parameters:
+    ///   - target: "root@192.168.40.210" or a Host from ~/.ssh/config.
+    ///   - identityFile: a private key, or nil for ssh's own choice.
+    public init(target: String, identityFile: String? = nil) {
+        self.target = target
+        let key = identityFile?.trimmingCharacters(in: .whitespaces) ?? ""
+        self.identityFile = key.isEmpty ? nil : (key as NSString).expandingTildeInPath
+    }
+
+    /// Short, so it stays under the 104-byte socket path limit.
+    private nonisolated var controlPath: String { "/tmp/porthole-\(getuid())-%C" }
+
+    nonisolated func sshArguments(_ remote: String? = nil, extra: [String] = []) -> [String] {
+        var args = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=8", "-o", "ServerAliveInterval=15",
+                    "-o", "ServerAliveCountMax=3", "-o", "ControlPath=\(controlPath)"]
+        if let identityFile { args += ["-i", identityFile, "-o", "IdentitiesOnly=yes"] }
+        args += extra
+        args.append(target)
+        if let remote { args.append(remote) }
+        return args
+    }
+
+    /// Opens the shared connection when it isn't open yet.
+    func ensureMaster() async throws {
+        if masterReady, (try? await Self.run(sshArguments(extra: ["-O", "check"]))) != nil { return }
+        masterReady = false
+        if (try? await Self.run(sshArguments(extra: ["-O", "check"]))) == nil {
+            _ = try await Self.run(sshArguments(extra: ["-f", "-N", "-o", "ControlMaster=yes", "-o", "ControlPersist=600"]),
+                                   discardOutput: true)
+        }
+        masterReady = true
+    }
+
+    /// Closes the shared connection (on quit, or when the address changes).
+    public func disconnect() async {
+        _ = try? await Self.run(sshArguments(extra: ["-O", "exit"]))
+        masterReady = false
+    }
+
+    func command(_ remote: String) async throws -> String {
+        try await ensureMaster()
+        do {
+            return try await Self.run(sshArguments(remote))
+        } catch DockerError.command(status: 255, _) {
+            // The shared connection went away (sleep, network change): once more with a new one.
+            masterReady = false
+            try await ensureMaster()
+            return try await Self.run(sshArguments(remote))
+        }
+    }
+
+    public func containers() async throws -> [Container] {
+        try await command("docker ps -a --no-trunc --format '{{json .}}'")
+            .split(separator: "\n").compactMap(Container.parse)
+    }
+
+    public func inspect(_ name: String) async throws -> ContainerState {
+        let quoted = Self.quote(name)
+        let since = Int(Date().timeIntervalSince1970) - 3600
+        let output = try await command("docker inspect \(quoted); echo '--porthole--'; docker events --since \(since) --until \(since + 3600) --filter container=\(quoted) --filter event=start --format x | wc -l")
+        let parts = output.components(separatedBy: "--porthole--")
+        guard var state = ContainerState.parse(inspect: parts[0]) else {
+            throw DockerError.command(status: 1, message: "Docker has no container named \(name).")
+        }
+        state.startsLastHour = Int(parts.last?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "") ?? 0
+        return state
+    }
+
+    public nonisolated func logs(_ name: String, tail: Int, since: Date?) -> AsyncThrowingStream<String, Error> {
+        let from = since.map { "--since \(DockerTime.string($0))" } ?? "--tail \(tail)"
+        return stream("docker logs -f -t \(from) \(Self.quote(name)) 2>&1")
+    }
+
+    public nonisolated func events() -> AsyncThrowingStream<String, Error> {
+        stream("docker events --filter type=container --format '{{json .}}'")
+    }
+
+    public nonisolated func stats() -> AsyncThrowingStream<String, Error> {
+        stream("docker stats --format '{{json .}}'")
+    }
+
+    public func perform(_ action: ContainerAction, on name: String) async throws {
+        _ = try await command("docker \(action.rawValue) \(Self.quote(name))")
+    }
+
+    /// A long-running remote command, line by line. Cancelling the stream ends the command.
+    nonisolated func stream(_ remote: String) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            let box = ProcessBox()
+            let task = Task.detached {
+                do {
+                    try await self.ensureMaster()
+                    let process = Process()
+                    process.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
+                    process.arguments = self.sshArguments(remote)
+                    let out = Pipe()
+                    process.standardOutput = out
+                    process.standardError = out
+                    process.standardInput = FileHandle.nullDevice
+                    try process.run()
+                    guard box.set(process) else { return }
+                    for try await line in out.fileHandleForReading.bytes.lines {
+                        continuation.yield(line)
+                    }
+                    process.waitUntilExit()
+                    if Task.isCancelled || process.terminationStatus == 0 || process.terminationReason == .uncaughtSignal {
+                        continuation.finish()
+                    } else {
+                        continuation.finish(throwing: DockerError.command(status: process.terminationStatus, message: ""))
+                    }
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+            continuation.onTermination = { _ in
+                task.cancel()
+                box.cancel()
+            }
+        }
+    }
+
+    /// Runs ssh and returns its output; throws with its error text when it fails.
+    static func run(_ arguments: [String], discardOutput: Bool = false) async throws -> String {
+        try await withCheckedThrowingContinuation { continuation in
+            DispatchQueue.global(qos: .userInitiated).async {
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
+                process.arguments = arguments
+                process.standardInput = FileHandle.nullDevice
+                // A backgrounded master keeps its output open: never read from it.
+                let out = Pipe(), err = Pipe()
+                process.standardOutput = discardOutput ? FileHandle.nullDevice : out
+                process.standardError = discardOutput ? FileHandle.nullDevice : err
+                do { try process.run() } catch {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                var output = Data(), errors = Data()
+                if !discardOutput {
+                    let group = DispatchGroup()
+                    let errorBox = DataBox()
+                    group.enter()
+                    DispatchQueue.global().async {
+                        errorBox.data = err.fileHandleForReading.readDataToEndOfFile()
+                        group.leave()
+                    }
+                    output = out.fileHandleForReading.readDataToEndOfFile()
+                    group.wait()
+                    errors = errorBox.data
+                }
+                process.waitUntilExit()
+                if process.terminationStatus == 0 {
+                    continuation.resume(returning: String(decoding: output, as: UTF8.self))
+                } else {
+                    let message = String(decoding: errors, as: UTF8.self)
+                    continuation.resume(throwing: DockerError.command(status: process.terminationStatus,
+                                                                      message: discardOutput ? "Couldn't connect to the server over SSH. Check the address and key in Settings." : message))
+                }
+            }
+        }
+    }
+
+    /// Single quotes for the remote shell.
+    static func quote(_ text: String) -> String {
+        "'" + text.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+}
+
+private final class DataBox: @unchecked Sendable {
+    var data = Data()
+}
+
+/// The ssh process behind a stream, so cancelling can stop it.
+private final class ProcessBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var process: Process?
+    private var cancelled = false
+
+    /// False when the stream was already cancelled; the process is stopped.
+    func set(_ process: Process) -> Bool {
+        lock.withLock {
+            if cancelled { process.terminate(); return false }
+            self.process = process
+            return true
+        }
+    }
+
+    func cancel() {
+        lock.withLock {
+            cancelled = true
+            if let process, process.isRunning { process.terminate() }
+        }
+    }
+}

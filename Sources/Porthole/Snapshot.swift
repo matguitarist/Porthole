@@ -7,9 +7,12 @@ import SwiftUI
 /// writes <page>-light.png and <page>-dark.png for every sidebar page, and
 /// settings-<tab>-light.png and settings-<tab>-dark.png for every Settings tab, then quits.
 /// Each PNG gets a <page>-<mode>-layout.json with the grid probes (tools/check-layout.swift).
-/// APP_SNAPSHOT_PAGES=all,starred limits the pages. Add "settings" to include Settings.
+/// The pages are sample containers (DemoDocker). APP_SNAPSHOT_PAGES=seerr,tautulli limits them. Add "settings" to include Settings.
 /// Add APP_ACCENT=<id> to see the pages in another accent.
 enum Snapshot {
+    /// Sample containers that show each state: warnings, an unhealthy one, a crashed one.
+    static let pages = ["uptime-kuma", "seerr", "tautulli", "mangosd"]
+
     static func runIfRequested(model: AppModel, openSettings: OpenSettingsAction) {
         let env = ProcessInfo.processInfo.environment
         guard let dir = env["APP_SNAPSHOT"], !dir.isEmpty else { return }
@@ -32,10 +35,10 @@ enum Snapshot {
             try? await Task.sleep(for: .seconds(1.5))
             for mode in ["light", "dark"] {
                 NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
-                for page in SidebarItem.allCases where only?.contains(page.rawValue) ?? true {
-                    model.sidebar = page
-                    try? await Task.sleep(for: .seconds(0.8))
-                    capture(to: "\(dir)/\(page.rawValue)-\(mode).png")
+                for page in pages where only?.contains(page) ?? true {
+                    model.selection = page
+                    try? await Task.sleep(for: .seconds(1.2))
+                    capture(to: "\(dir)/\(page)-\(mode).png")
                 }
             }
             if only == nil || only?.contains("settings") == true {

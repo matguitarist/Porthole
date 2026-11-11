@@ -1,5 +1,4 @@
 import AppKit
-import SwiftData
 import PortholeKit
 
 /// Self-test for agents: runs the app's real functions on a test store,
@@ -24,23 +23,45 @@ enum SelfTest {
             return
         }
         Task {
-            try? await Task.sleep(for: .seconds(0.5))
-            let context = model.container.mainContext
-            func items() -> [Item] { (try? context.fetch(FetchDescriptor<Item>())) ?? [] }
+            // ContentView connects on its own; wait for the sample containers.
+            for _ in 0..<50 where model.connection != .connected { try? await Task.sleep(for: .milliseconds(100)) }
+            check("connects and lists the sample containers", model.containers.count == 7, "\(model.containers.count)")
+            check("picks a running container first", model.selected?.isRunning == true)
 
-            let before = items().count
-            model.addItem()
-            check("New Item adds one item", items().count == before + 1)
-            check("the new item is selected", model.selection != nil)
+            model.selection = "tautulli"
+            let log = model.log(for: "tautulli")
+            for _ in 0..<50 where log.store.entries.count < 6 || log.state == nil { try? await Task.sleep(for: .milliseconds(100)) }
+            check("streams the container's log", log.store.entries.count == 6, "\(log.store.entries.count)")
+            check("reads levels from the app's own words", log.store.entries.filter { $0.level == .error }.count == 2)
+            check("an unhealthy container gets an insight", log.store.insights.contains { $0.id == ContainerInsights.healthID })
+            check("so do three restarts in an hour", log.store.insights.contains { $0.id == ContainerInsights.restartID })
 
-            if let item = items().first(where: { $0.id == model.selection }) {
-                item.isStarred.toggle()
-                check("starring an item marks it starred", item.isStarred)
-                context.delete(item)
-                try? context.save()
-                check("deleting the item removes it", items().count == before)
-            }
-            check("titles are cleaned", ItemTitle.clean("  Buy   milk ") == "Buy milk")
+            model.selection = "mangosd"
+            let crashed = model.log(for: "mangosd")
+            for _ in 0..<50 where crashed.state == nil { try? await Task.sleep(for: .milliseconds(100)) }
+            check("a crash gets an insight", crashed.store.insights.first?.title.hasPrefix("Stopped with exit code 139") == true)
+            check("the log keeps following only the selected container", crashed.isFollowing && !log.isFollowing)
+            check("a stopped container can start, not stop", model.canPerform(.start) && !model.canPerform(.stop))
+
+            model.request(.start)
+            for _ in 0..<50 where model.selected?.isRunning != true { try? await Task.sleep(for: .milliseconds(100)) }
+            check("Start starts it", model.selected?.isRunning == true)
+
+            model.request(.stop)
+            check("Stop asks first", model.confirmStop == "mangosd" && model.selected?.isRunning == true)
+            model.confirmStop = nil
+            await model.perform(.stop, on: "mangosd")
+            check("Stop stops it", model.selected?.isRunning == false)
+
+            model.search = "taut"
+            check("the filter narrows the list", model.shown.map(\.name) == ["tautulli"])
+            model.search = ""
+
+            for _ in 0..<50 where model.stats["seerr"] == nil { try? await Task.sleep(for: .milliseconds(100)) }
+            check("usage arrives for running containers", (model.stats["seerr"]?.cpu.count ?? 0) > 0)
+            check("the web page comes from Unraid's template",
+                  model.webUI(for: model.containers.first { $0.name == "seerr" })?.absoluteString == "http://192.168.40.210:5055"
+                  || model.webUI(for: model.containers.first { $0.name == "seerr" })?.port == 5055)
 
             print(failures == 0 ? "SELFTEST PASS \(count) checks" : "SELFTEST FAIL \(failures) of \(count) checks")
             finish(code: failures == 0 ? 0 : 1)
