@@ -1,7 +1,9 @@
 # Porthole
 
-A native macOS app in SwiftUI. It runs on this Mac only, with a local
-SwiftData database and no server.
+A native macOS app in SwiftUI for a Docker server's containers and logs
+(the owner's Unraid server), replacing Dozzle. It connects with `ssh` and the
+`docker` command; nothing is installed on the server. `agent/` is the optional
+Rust agent with a web page, for use away from the Mac. `README.md` says what it does.
 
 ## Layout
 
@@ -10,13 +12,16 @@ SwiftData database and no server.
 - `Package.swift` a Swift package. There is no Xcode project.
 - `build.sh` builds, signs, and installs `~/Applications/Porthole.app`.
 - `Icon/AppIcon.icon` the app icon, an Icon Composer file (JSON plus SVG layers). `build.sh` compiles it with `tools/make_icon.sh`; `tools/icon_review.sh` renders every look into one PNG.
-- `docs/` the brief, the screen index, and the user stories, when they exist.
+- `docs/STORIES.md` the stories: what's built and what's next. The roadmap is "Porthole Roadmap" in Thimble.
+- `Localization/Localizable.xcstrings` English and French. Every new string needs its French (`tools/l10n-check.sh` prints PASS). PortholeKit's visible words use `String(localized:bundle: .main)`, so they live in the same catalog.
+- `tools/release.sh <version>` releases (Developer ID, notarized DMG, Sparkle appcast, GitHub release); its settings are in `release.conf`, the version in `Info.plist.in`, notes in `release-notes/<version>.md`. Sparkle's key is in the login keychain, account `porthole`.
+- `agent/` the Rust agent (axum, bollard): `cargo test`, `cargo clippy -- -D warnings`, `agent/deploy.sh` to install it on the server. `agent/src/parse.rs` reads levels like `PortholeKit/LogLine.swift`: keep the two in step.
 
 ## Build and check
 
 - Build and install: `./build.sh`. Add `--open` to restart the app with the new build. The build shows warnings; fix them.
 - Unit tests: `swift test --scratch-path ~/Library/Developer/Porthole/test-build`.
-- Self-test (the app's real functions on a /tmp store): `tools/selftest.sh`. Exit 0 when every check passes. Add a check for every story with logic in `SelfTest.swift`.
+- Self-test (the app's real functions on a /tmp store): `tools/selftest.sh` (in English; `APP_LANGUAGE=fr` for French). Exit 0 when every check passes. Add a check for every story with logic in `SelfTest.swift`.
 - After every UI change, take snapshots with sample data and look at them: `tools/snap.sh`.
   It writes `/tmp/Porthole-shots/<page>-light.png` and `-dark.png` for every sidebar page, and `settings-<tab>-light.png` and `-dark.png` for every Settings tab, then quits. `APP_SNAPSHOT_PAGES=all,settings tools/snap.sh` limits the pages.
   For a panel, sheet, or popover, add a capture to `Snapshot.swift` like the Settings loop.
