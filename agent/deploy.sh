@@ -11,6 +11,13 @@ key=${PORTHOLE_KEY:-$HOME/.ssh/id_ed25519_homeserver}
 actions=${PORTHOLE_ACTIONS:-0}
 ssh=(ssh -i "$key" "$target")
 
+# The image builds on this Mac: start OrbStack (or Docker Desktop) when it's off.
+if ! docker info >/dev/null 2>&1; then
+  echo "→ start Docker on this Mac"
+  open -ga OrbStack 2>/dev/null || open -ga Docker 2>/dev/null || { echo "✗ no Docker on this Mac (OrbStack or Docker Desktop)"; exit 1; }
+  for _ in {1..60}; do docker info >/dev/null 2>&1 && break; sleep 2; done
+  docker info >/dev/null 2>&1 || { echo "✗ Docker didn't start"; exit 1; }
+fi
 echo "→ build (linux/amd64)"
 docker build -q --platform linux/amd64 -t porthole-agent:latest "$here" >/dev/null
 echo "→ copy the image ($(docker image inspect porthole-agent:latest --format '{{.Size}}' | awk '{printf "%.1f MB", $1/1e6}'))"
