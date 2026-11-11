@@ -19,4 +19,5 @@
 <key>SUPublicEDKey</key><string>6D81NIBxpWzFrqxRN2kQC49EDzyezdP49ofIxjGFVvY=</string>
 <key>SUEnableInstallerLauncherService</key><false/>
 <key>CFBundleDevelopmentRegion</key><string>en</string>
+<key>CFBundleLocalizations</key><array><string>en</string><string>fr</string></array>
 </dict></plist>

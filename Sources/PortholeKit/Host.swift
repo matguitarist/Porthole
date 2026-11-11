@@ -18,9 +18,9 @@ public struct HostInfo: Sendable, Equatable {
         /// "Array", "Cache", "Flash" for Unraid's mounts.
         public var title: String {
             switch mount {
-            case "/mnt/user": "Array"
-            case "/mnt/cache": "Cache"
-            case "/boot": "Flash"
+            case "/mnt/user": String(localized: "Array", bundle: .main)
+            case "/mnt/cache": String(localized: "Cache", bundle: .main)
+            case "/boot": String(localized: "Flash", bundle: .main)
             default: mount
             }
         }
@@ -62,7 +62,8 @@ public struct HostInfo: Sendable, Equatable {
 
     /// Unraid version for the subtitle: "Unraid 7.2.1".
     public var subtitle: String {
-        version.isEmpty ? "\(cores) cores" : "Unraid \(version) · \(cores) cores"
+        let count = String(localized: "\(cores) cores", bundle: .main)
+        return version.isEmpty ? count : "Unraid \(version) · \(count)"
     }
 }
 

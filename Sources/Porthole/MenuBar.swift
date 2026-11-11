@@ -102,9 +102,10 @@ struct MenuBarPanel: View {
     }
 
     static func counts(_ summary: ProblemSummary) -> String {
-        func count(_ n: Int, _ word: String) -> String { "\(n)\(summary.capped ? "+" : "") \(word)\(n == 1 ? "" : "s")" }
-        return [summary.errors > 0 ? count(summary.errors, "error") : nil,
-                summary.warnings > 0 ? count(summary.warnings, "warning") : nil].compactMap(\.self).joined(separator: ", ")
+        let more = summary.capped ? "+" : ""
+        let errors = summary.errors == 1 ? String(localized: "1\(more) error") : String(localized: "\(summary.errors)\(more) errors")
+        let warnings = summary.warnings == 1 ? String(localized: "1\(more) warning") : String(localized: "\(summary.warnings)\(more) warnings")
+        return [summary.errors > 0 ? errors : nil, summary.warnings > 0 ? warnings : nil].compactMap(\.self).joined(separator: ", ")
     }
 
     private func row(_ name: String, detail: String, symbol: String, color: Color, problemsOnly: Bool = false) -> some View {
@@ -129,7 +130,7 @@ struct MenuBarPanel: View {
 }
 
 private struct LabeledValue: View {
-    let title: String
+    let title: LocalizedStringKey
     let value: String
 
     var body: some View {

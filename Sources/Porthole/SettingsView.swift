@@ -45,12 +45,12 @@ enum SettingsTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .general: "General"
-        case .server: "Server"
-        case .alerts: "Alerts"
-        case .ignored: "Ignored"
-        case .appearance: "Appearance"
-        case .updates: "Updates"
+        case .general: String(localized: "General")
+        case .server: String(localized: "Server")
+        case .alerts: String(localized: "Alerts")
+        case .ignored: String(localized: "Ignored")
+        case .appearance: String(localized: "Appearance")
+        case .updates: String(localized: "Updates")
         }
     }
 
@@ -175,15 +175,15 @@ struct AlertSettingsForm: View {
                 .disabled(!gotify)
             HStack {
                 if let testResult {
-                    Label(testResult, systemImage: testResult == "Sent." ? "checkmark.circle.fill" : "xmark.octagon.fill")
-                        .foregroundStyle(testResult == "Sent." ? .green : .red)
+                    Label(testResult, systemImage: testResult == String(localized: "Sent.") ? "checkmark.circle.fill" : "xmark.octagon.fill")
+                        .foregroundStyle(testResult == String(localized: "Sent.") ? .green : .red)
                         .lineLimit(2)
                 }
                 Spacer()
                 Button("Send Test") {
                     testing = true
                     Task {
-                        testResult = await model.notifier.testGotify(url: gotifyURL, token: token) ?? "Sent."
+                        testResult = await model.notifier.testGotify(url: gotifyURL, token: token) ?? String(localized: "Sent.")
                         testing = false
                     }
                 }
@@ -285,9 +285,9 @@ struct UpdateSettingsForm: View {
     }
 
     private var note: String {
-        guard Updater.shared.isAvailable else { return "Updates are off in this build." }
-        guard let last = Updater.shared.lastCheck else { return "Looks once a day for a new version on GitHub." }
-        return "Looks once a day for a new version on GitHub. Last checked \(last.formatted(.relative(presentation: .named)))."
+        guard Updater.shared.isAvailable else { return String(localized: "Updates are off in this build.") }
+        guard let last = Updater.shared.lastCheck else { return String(localized: "Looks once a day for a new version on GitHub.") }
+        return String(localized: "Looks once a day for a new version on GitHub. Last checked \(last.formatted(.relative(presentation: .named))).")
     }
 }
 

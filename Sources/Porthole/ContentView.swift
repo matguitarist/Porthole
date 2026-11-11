@@ -182,19 +182,19 @@ struct StateBadge: View {
     }
 
     static func look(_ container: Container) -> (symbol: String, color: Color, help: String) {
-        if container.state == "restarting" { return ("arrow.clockwise.circle.fill", .orange, "Restarting") }
-        if container.state == "paused" { return ("pause.circle.fill", .secondary, "Paused") }
+        if container.state == "restarting" { return ("arrow.clockwise.circle.fill", .orange, String(localized: "Restarting")) }
+        if container.state == "paused" { return ("pause.circle.fill", .secondary, String(localized: "Paused")) }
         if container.isRunning {
             switch container.health {
-            case "unhealthy": return ("exclamationmark.triangle.fill", .orange, "Running, unhealthy")
-            case "starting": return ("circle.dotted", .green, "Running, health check starting")
-            default: return ("circle.fill", .green, container.health == "healthy" ? "Running, healthy" : "Running")
+            case "unhealthy": return ("exclamationmark.triangle.fill", .orange, String(localized: "Running, unhealthy"))
+            case "starting": return ("circle.dotted", .green, String(localized: "Running, health check starting"))
+            default: return ("circle.fill", .green, container.health == "healthy" ? String(localized: "Running, healthy") : String(localized: "Running"))
             }
         }
         if let code = container.exitCode, code != 0, code != 143 {
-            return ("xmark.circle.fill", .red, "Stopped with exit code \(code)")
+            return ("xmark.circle.fill", .red, String(localized: "Stopped with exit code \(code)"))
         }
-        return ("stop.circle", .secondary, "Stopped")
+        return ("stop.circle", .secondary, String(localized: "status.stopped", defaultValue: "Stopped"))
     }
 }
 
@@ -230,7 +230,7 @@ struct ContainerDetail: View {
         } else if case .stack(let project) = model.page {
             let log = model.stackLog(project)
             LogViewer(model: log.viewer, options: LogViewerOptions(
-                emptyTitle: "No Messages", emptyMessage: "The containers of \(project) haven't logged anything yet.",
+                emptyTitle: String(localized: "No Messages"), emptyMessage: String(localized: "The containers of \(project) haven't logged anything yet."),
                 entryInspector: { selected, _ in AnyView(EntryInspector(entries: selected, container: nil, stack: log)) },
                 sourceColor: { _ in Palette.accentText }))
                 .id(log.key)
@@ -257,9 +257,9 @@ struct ContainerDetail: View {
 
     private func options(for name: String, log: ContainerLog) -> LogViewerOptions {
         LogViewerOptions(
-            emptyTitle: "No Messages",
-            emptyMessage: "\(name) hasn't logged anything yet.",
-            insightsTitle: "What Docker is telling you",
+            emptyTitle: String(localized: "No Messages"),
+            emptyMessage: String(localized: "\(name) hasn't logged anything yet."),
+            insightsTitle: String(localized: "What Docker is telling you"),
             insightActions: { insight in
                 AnyView(InsightActions(insight: insight, name: name))
             },
@@ -326,10 +326,10 @@ struct UsageView: View {
         if let history = model.stats[name], let cpu = history.cpu.last, let memory = history.memory.last,
            model.containers.first(where: { $0.name == name })?.isRunning == true {
             HStack(spacing: Space.lg) {
-                metric(label: "CPU", value: Format.percent(cpu), values: history.cpu,
-                       help: "CPU over the last \(Format.window(history.cpu.count)): now \(Format.percent(cpu)), peak \(Format.percent(history.cpu.max() ?? 0)). 100% is one full core.")
-                metric(label: "Memory", value: Format.bytes(memory), values: history.memory,
-                       help: "Memory over the last \(Format.window(history.memory.count)): now \(Format.bytes(memory)), peak \(Format.bytes(history.memory.max() ?? 0)) of \(Format.bytes(history.memoryLimit)).")
+                metric(label: String(localized: "CPU"), value: Format.percent(cpu), values: history.cpu,
+                       help: String(localized: "CPU over the last \(Format.window(history.cpu.count)): now \(Format.percent(cpu)), peak \(Format.percent(history.cpu.max() ?? 0)). 100% is one full core."))
+                metric(label: String(localized: "Memory"), value: Format.bytes(memory), values: history.memory,
+                       help: String(localized: "Memory over the last \(Format.window(history.memory.count)): now \(Format.bytes(memory)), peak \(Format.bytes(history.memory.max() ?? 0)) of \(Format.bytes(history.memoryLimit))."))
             }
         }
     }
@@ -384,7 +384,7 @@ enum Format {
     /// Samples arrive every two seconds.
     static func window(_ count: Int) -> String {
         let seconds = count * 2
-        return seconds < 120 ? "\(seconds) seconds" : "\(seconds / 60) minutes"
+        return seconds < 120 ? String(localized: "\(seconds) seconds") : String(localized: "\(seconds / 60) minutes")
     }
 }
 

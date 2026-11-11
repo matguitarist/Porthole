@@ -256,14 +256,17 @@ public struct DockerEvent: Sendable, Equatable {
     /// "Stopped with exit code 137", "Started", "Became unhealthy".
     public var summary: String {
         switch action {
-        case "start": return "Started"
-        case "restart": return "Restarted"
-        case "oom": return "Ran out of memory"
+        case "start": return String(localized: "Started", bundle: .main)
+        case "restart": return String(localized: "Restarted", bundle: .main)
+        case "oom": return String(localized: "Ran out of memory", bundle: .main)
         case "die":
-            guard let exitCode else { return "Stopped" }
-            return exitCode == 0 || exitCode == 143 ? "Stopped" : "Stopped with exit code \(exitCode)"
-        case "health_status: unhealthy": return "Became unhealthy"
-        case "health_status: healthy": return "Healthy again"
+            // Its own key: "Stopped" is also the sidebar's section, plural in French.
+            guard let exitCode, exitCode != 0, exitCode != 143 else {
+                return String(localized: "event.stopped", defaultValue: "Stopped", bundle: .main)
+            }
+            return String(localized: "Stopped with exit code \(exitCode)", bundle: .main)
+        case "health_status: unhealthy": return String(localized: "Became unhealthy", bundle: .main)
+        case "health_status: healthy": return String(localized: "Healthy again", bundle: .main)
         default: return action.capitalized
         }
     }

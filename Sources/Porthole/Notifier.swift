@@ -35,15 +35,15 @@ final class Notifier {
     func event(_ event: DockerEvent, recent: [DockerEvent]) {
         guard crashesOn else { return }
         if event.isProblem {
-            let title = event.action == "health_status: unhealthy" ? "\(event.name) is unhealthy"
-                : event.action == "oom" ? "\(event.name) ran out of memory"
-                : "\(event.name) crashed"
+            let title = event.action == "health_status: unhealthy" ? String(localized: "\(event.name) is unhealthy")
+                : event.action == "oom" ? String(localized: "\(event.name) ran out of memory")
+                : String(localized: "\(event.name) crashed")
             send(key: "\(event.name)|\(event.action)", title: title, body: event.summary, container: event.name)
         } else if event.action == "start" {
             let starts = recent.filter { $0.name == event.name && $0.action == "start" && $0.date > Date().addingTimeInterval(-600) }
             if starts.count >= 3 {
-                send(key: "\(event.name)|loop", title: "\(event.name) keeps restarting",
-                     body: "It started \(starts.count) times in 10 minutes.", container: event.name)
+                send(key: "\(event.name)|loop", title: String(localized: "\(event.name) keeps restarting"),
+                     body: String(localized: "It started \(starts.count) times in 10 minutes."), container: event.name)
             }
         }
     }
@@ -54,7 +54,7 @@ final class Notifier {
         for (name, summary) in now {
             let added = summary.errors - (previous[name]?.errors ?? 0)
             guard added > 0 else { continue }
-            send(key: "\(name)|errors", title: "\(name): \(added) new error\(added == 1 ? "" : "s")",
+            send(key: "\(name)|errors", title: added == 1 ? String(localized: "\(name): 1 new error") : String(localized: "\(name): \(added) new errors"),
                  body: summary.latest?.message ?? "", container: name)
         }
     }
@@ -82,9 +82,9 @@ final class Notifier {
 
     /// A test message, from Settings. Returns an error to show, or nil.
     func testGotify(url: String, token: String) async -> String? {
-        guard let ssh = AppModel.current?.client as? SSHDocker else { return "Connect to the server first." }
+        guard let ssh = AppModel.current?.client as? SSHDocker else { return String(localized: "Connect to the server first.") }
         do {
-            try await ssh.gotify(url: url, token: token, title: "Porthole", message: "Alerts from Porthole arrive here.")
+            try await ssh.gotify(url: url, token: token, title: "Porthole", message: String(localized: "Alerts from Porthole arrive here."))
             return nil
         } catch {
             return error.localizedDescription

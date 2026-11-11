@@ -1,0 +1,2474 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    " ": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": " "
+          }
+        }
+      }
+    },
+    "%@ %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ %2$@"
+          }
+        }
+      }
+    },
+    "%@ Docker says: %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ Docker says: %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ Docker indique : %2$@"
+          }
+        }
+      }
+    },
+    "%@ crashed": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ a planté"
+          }
+        }
+      }
+    },
+    "%@ hasn't logged anything yet.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ n’a encore rien écrit dans son journal."
+          }
+        }
+      }
+    },
+    "%@ is unhealthy": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ est en mauvaise santé"
+          }
+        }
+      }
+    },
+    "%@ keeps restarting": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ redémarre sans arrêt"
+          }
+        }
+      }
+    },
+    "%@ of %@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@ of %2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ sur %2$@"
+          }
+        }
+      }
+    },
+    "%@ ran out of memory": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ a manqué de mémoire"
+          }
+        }
+      }
+    },
+    "%@: %@ free": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@: %2$@ free"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ : %2$@ libres"
+          }
+        }
+      }
+    },
+    "%@: %lld new errors": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$@: %2$lld new errors"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ : %2$lld nouvelles erreurs"
+          }
+        }
+      }
+    },
+    "%@: 1 new error": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ : 1 nouvelle erreur"
+          }
+        }
+      }
+    },
+    "%lld containers": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld conteneurs"
+          }
+        }
+      }
+    },
+    "%lld cores": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld cœurs"
+          }
+        }
+      }
+    },
+    "%lld days %lld h": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld days %2$lld h"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld jours %2$lld h"
+          }
+        }
+      }
+    },
+    "%lld days ago": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "il y a %lld jours"
+          }
+        }
+      }
+    },
+    "%lld h %lld min": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld h %2$lld min"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld h %2$lld min"
+          }
+        }
+      }
+    },
+    "%lld h ago": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "il y a %lld h"
+          }
+        }
+      }
+    },
+    "%lld messages selected": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld messages sélectionnés"
+          }
+        }
+      }
+    },
+    "%lld min": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld min"
+          }
+        }
+      }
+    },
+    "%lld min ago": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "il y a %lld min"
+          }
+        }
+      }
+    },
+    "%lld minutes": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld minutes"
+          }
+        }
+      }
+    },
+    "%lld of %lld running": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld of %2$lld running"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld sur %2$lld en marche"
+          }
+        }
+      }
+    },
+    "%lld running": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld en marche"
+          }
+        }
+      }
+    },
+    "%lld seconds": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld secondes"
+          }
+        }
+      }
+    },
+    "%lld stopped": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld arrêtés"
+          }
+        }
+      }
+    },
+    "%lld unhealthy": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld en mauvaise santé"
+          }
+        }
+      }
+    },
+    "%lld%@ errors": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld%2$@ errors"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld%2$@ erreurs"
+          }
+        }
+      }
+    },
+    "%lld%@ warnings": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "%1$lld%2$@ warnings"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$lld%2$@ avertissements"
+          }
+        }
+      }
+    },
+    "1 day %lld h": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 jour %lld h"
+          }
+        }
+      }
+    },
+    "1 left": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 restante"
+          }
+        }
+      }
+    },
+    "1%@ error": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1%@ erreur"
+          }
+        }
+      }
+    },
+    "1%@ warning": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1%@ avertissement"
+          }
+        }
+      }
+    },
+    "1,000": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 000"
+          }
+        }
+      }
+    },
+    "20,000": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "20 000"
+          }
+        }
+      }
+    },
+    "5,000": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5 000"
+          }
+        }
+      }
+    },
+    "500": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "500"
+          }
+        }
+      }
+    },
+    "A status icon with the server's load and what needs a look": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une icône d’état avec la charge du serveur et ce qui demande votre attention"
+          }
+        }
+      }
+    },
+    "Accent color": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couleur d’accentuation"
+          }
+        }
+      }
+    },
+    "Add Task": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajouter une tâche"
+          }
+        }
+      }
+    },
+    "Alerts": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Alertes"
+          }
+        }
+      }
+    },
+    "Alerts from Porthole arrive here.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les alertes de Porthole arrivent ici."
+          }
+        }
+      }
+    },
+    "Almost full": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presque plein"
+          }
+        }
+      }
+    },
+    "Also send to Gotify": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyer aussi à Gotify"
+          }
+        }
+      }
+    },
+    "App token": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jeton d’app"
+          }
+        }
+      }
+    },
+    "Appearance": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apparence"
+          }
+        }
+      }
+    },
+    "Array": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Array"
+          }
+        }
+      }
+    },
+    "As the server sees it. Porthole sends from the server with curl.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Telle que le serveur la voit. Porthole envoie depuis le serveur avec curl."
+          }
+        }
+      }
+    },
+    "Automatic Updates": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mises à jour automatiques"
+          }
+        }
+      }
+    },
+    "Became unhealthy": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Est passé en mauvaise santé"
+          }
+        }
+      }
+    },
+    "Busiest Now": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les plus occupés"
+          }
+        }
+      }
+    },
+    "CPU": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Processeur"
+          }
+        }
+      }
+    },
+    "CPU now": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Processeur maintenant"
+          }
+        }
+      }
+    },
+    "CPU over the last %@, all %lld cores together. Load is the 1, 5 and 15 minute average.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "CPU over the last %1$@, all %2$lld cores together. Load is the 1, 5 and 15 minute average."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Processeur sur les dernières %1$@, les %2$lld cœurs ensemble. La charge est la moyenne sur 1, 5 et 15 minutes."
+          }
+        }
+      }
+    },
+    "CPU over the last %@: now %@, peak %@. 100%% is one full core.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "CPU over the last %1$@: now %2$@, peak %3$@. 100%% is one full core."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Processeur sur les dernières %1$@ : maintenant %2$@, pointe %3$@. 100 %% correspond à un cœur entier."
+          }
+        }
+      }
+    },
+    "Cache": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cache"
+          }
+        }
+      }
+    },
+    "Can't Reach the Server": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de joindre le serveur"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Annuler"
+          }
+        }
+      }
+    },
+    "Check Now": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifier maintenant"
+          }
+        }
+      }
+    },
+    "Check for Updates…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher des mises à jour…"
+          }
+        }
+      }
+    },
+    "Check for updates automatically": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rechercher les mises à jour automatiquement"
+          }
+        }
+      }
+    },
+    "Checked at every scan (Settings > General)": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifié à chaque analyse (Réglages > Général)"
+          }
+        }
+      }
+    },
+    "Choose…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisir…"
+          }
+        }
+      }
+    },
+    "Clear All Logs on Server…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vider tous les journaux sur le serveur…"
+          }
+        }
+      }
+    },
+    "Clear Log on Server…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vider le journal sur le serveur…"
+          }
+        }
+      }
+    },
+    "Clear Logs on Server…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vider les journaux sur le serveur…"
+          }
+        }
+      }
+    },
+    "Clear on Server": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vider sur le serveur"
+          }
+        }
+      }
+    },
+    "Clear the log of %@?": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vider le journal de %@ ?"
+          }
+        }
+      }
+    },
+    "Connect to the server first.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connectez-vous d’abord au serveur."
+          }
+        }
+      }
+    },
+    "Connected: %lld containers": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connecté : %lld conteneurs"
+          }
+        }
+      }
+    },
+    "Connecting to %@…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexion à %@…"
+          }
+        }
+      }
+    },
+    "Connecting…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connexion…"
+          }
+        }
+      }
+    },
+    "Container": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conteneur"
+          }
+        }
+      }
+    },
+    "Containers": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conteneurs"
+          }
+        }
+      }
+    },
+    "Couldn't Do That": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impossible de faire cela"
+          }
+        }
+      }
+    },
+    "Count these messages as problems again": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compter de nouveau ces messages comme des problèmes"
+          }
+        }
+      }
+    },
+    "Crashes, out of memory, unhealthy, restart loops": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plantages, manque de mémoire, mauvaise santé, redémarrages en boucle"
+          }
+        }
+      }
+    },
+    "Docker Server": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serveur Docker"
+          }
+        }
+      }
+    },
+    "Docker couldn't start it (a bad option or setting).": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker n’a pas pu le démarrer (une option ou un réglage incorrect)."
+          }
+        }
+      }
+    },
+    "Docker on %@ has no containers.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker sur %@ n’a aucun conteneur."
+          }
+        }
+      }
+    },
+    "Docker restarts it each time it stops (%lld restarts so far). The messages just before each start usually say why.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker le redémarre chaque fois qu’il s’arrête (%lld redémarrages jusqu’ici). Les messages juste avant chaque démarrage disent souvent pourquoi."
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terminé"
+          }
+        }
+      }
+    },
+    "Empty %@'s log file on the server": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vider le fichier journal de %@ sur le serveur"
+          }
+        }
+      }
+    },
+    "Empty every container's log file on the server, to start fresh": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vider le fichier journal de chaque conteneur sur le serveur, pour repartir à neuf"
+          }
+        }
+      }
+    },
+    "Empty these containers' log files on the server": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vider les fichiers journaux de ces conteneurs sur le serveur"
+          }
+        }
+      }
+    },
+    "Events, Last 24 Hours": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Événements des dernières 24 heures"
+          }
+        }
+      }
+    },
+    "Every 15 minutes": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toutes les 15 minutes"
+          }
+        }
+      }
+    },
+    "Every 5 minutes": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toutes les 5 minutes"
+          }
+        }
+      }
+    },
+    "Every container": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tous les conteneurs"
+          }
+        }
+      }
+    },
+    "Every hour": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toutes les heures"
+          }
+        }
+      }
+    },
+    "Every minute": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chaque minute"
+          }
+        }
+      }
+    },
+    "Everything since %@.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout depuis %@."
+          }
+        }
+      }
+    },
+    "Filter": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtrer"
+          }
+        }
+      }
+    },
+    "Flash": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flash"
+          }
+        }
+      }
+    },
+    "Focus": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Concentration"
+          }
+        }
+      }
+    },
+    "From Gotify > Apps": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dans Gotify > Apps"
+          }
+        }
+      }
+    },
+    "General": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Général"
+          }
+        }
+      }
+    },
+    "Gotify address": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse de Gotify"
+          }
+        }
+      }
+    },
+    "Healthy again": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De nouveau en bonne santé"
+          }
+        }
+      }
+    },
+    "How many earlier lines Porthole loads when you pick a container": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Combien de lignes précédentes Porthole charge quand vous choisissez un conteneur"
+          }
+        }
+      }
+    },
+    "How often Porthole reads the last day's warnings and errors, for the overview and new-error alerts": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À quelle fréquence Porthole lit les avertissements et erreurs du dernier jour, pour l’aperçu et les alertes de nouvelles erreurs"
+          }
+        }
+      }
+    },
+    "Ignore": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignorer"
+          }
+        }
+      }
+    },
+    "Ignore Messages Like This": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignorer les messages comme celui-ci"
+          }
+        }
+      }
+    },
+    "Ignore Messages Like This…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignorer les messages comme celui-ci…"
+          }
+        }
+      }
+    },
+    "Ignore Messages Like the Latest…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignorer les messages comme le dernier…"
+          }
+        }
+      }
+    },
+    "Ignored": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignorés"
+          }
+        }
+      }
+    },
+    "Ignored Messages": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Messages ignorés"
+          }
+        }
+      }
+    },
+    "Ignored lines still show in the log, as debug lines, but never count as warnings or errors or send alerts.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les lignes ignorées restent dans le journal, comme lignes de débogage, mais ne comptent jamais comme avertissements ou erreurs et n’envoient pas d’alertes."
+          }
+        }
+      }
+    },
+    "In": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dans"
+          }
+        }
+      }
+    },
+    "Inbox": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boîte de réception"
+          }
+        }
+      }
+    },
+    "It aborted (SIGABRT), usually after a failed check in its own code.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il s’est interrompu (SIGABRT), souvent après une vérification échouée dans son propre code."
+          }
+        }
+      }
+    },
+    "It crashed (segmentation fault).": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il a planté (erreur de segmentation)."
+          }
+        }
+      }
+    },
+    "It failed the last %lld health checks in a row.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il a échoué aux %lld derniers contrôles de santé d’affilée."
+          }
+        }
+      }
+    },
+    "It failed the last health check.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il a échoué au dernier contrôle de santé."
+          }
+        }
+      }
+    },
+    "It started %lld times in 10 minutes.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il a démarré %lld fois en 10 minutes."
+          }
+        }
+      }
+    },
+    "It stops answering until you start it again. Anything that depends on it stops working too.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il ne répond plus jusqu’à ce que vous le redémarriez. Tout ce qui en dépend cesse aussi de fonctionner."
+          }
+        }
+      }
+    },
+    "It was killed (SIGKILL): docker stop timed out, or the system ran out of memory.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il a été tué (SIGKILL) : docker stop a dépassé le délai, ou le système a manqué de mémoire."
+          }
+        }
+      }
+    },
+    "Its command couldn't run: it isn't executable.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sa commande n’a pas pu s’exécuter : elle n’est pas exécutable."
+          }
+        }
+      }
+    },
+    "Its command wasn't found in the image.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sa commande est introuvable dans l’image."
+          }
+        }
+      }
+    },
+    "Keeps restarting": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redémarre sans arrêt"
+          }
+        }
+      }
+    },
+    "Key file": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fichier de clé"
+          }
+        }
+      }
+    },
+    "Killed for running out of memory": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tué faute de mémoire"
+          }
+        }
+      }
+    },
+    "Last 24 Hours": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernières 24 heures"
+          }
+        }
+      }
+    },
+    "Last check: %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernier contrôle : %@"
+          }
+        }
+      }
+    },
+    "Lines to load": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lignes à charger"
+          }
+        }
+      }
+    },
+    "Load": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Charge"
+          }
+        }
+      }
+    },
+    "Load %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Charge %@"
+          }
+        }
+      }
+    },
+    "Looks once a day for a new version on GitHub.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cherche une nouvelle version sur GitHub une fois par jour."
+          }
+        }
+      }
+    },
+    "Looks once a day for a new version on GitHub. Last checked %@.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cherche une nouvelle version sur GitHub une fois par jour. Dernière vérification : %@."
+          }
+        }
+      }
+    },
+    "Matching ignores upper and lower case. Keep only the part that stays the same, so the rule catches every copy of the message. Settings > Ignored lists the rules.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La correspondance ne tient pas compte des majuscules. Gardez seulement la partie qui ne change pas, pour que la règle attrape chaque copie du message. Réglages > Ignorés liste les règles."
+          }
+        }
+      }
+    },
+    "Memory": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mémoire"
+          }
+        }
+      }
+    },
+    "Memory in use (not counting caches) over the last %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mémoire utilisée (sans les caches) sur les dernières %@"
+          }
+        }
+      }
+    },
+    "Memory over the last %@: now %@, peak %@ of %@.": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Memory over the last %1$@: now %2$@, peak %3$@ of %4$@."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mémoire sur les dernières %1$@ : maintenant %2$@, pointe %3$@ sur %4$@."
+          }
+        }
+      }
+    },
+    "Messages containing": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Messages contenant"
+          }
+        }
+      }
+    },
+    "Needs a Look": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À vérifier"
+          }
+        }
+      }
+    },
+    "New errors in a container's log": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouvelles erreurs dans le journal d’un conteneur"
+          }
+        }
+      }
+    },
+    "No Container Selected": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun conteneur sélectionné"
+          }
+        }
+      }
+    },
+    "No Containers": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun conteneur"
+          }
+        }
+      }
+    },
+    "No Message Selected": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun message sélectionné"
+          }
+        }
+      }
+    },
+    "No Messages": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun message"
+          }
+        }
+      }
+    },
+    "No container started, stopped or changed health.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun conteneur n’a démarré, ne s’est arrêté ni n’a changé de santé."
+          }
+        }
+      }
+    },
+    "No warnings or errors": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun avertissement ni erreur"
+          }
+        }
+      }
+    },
+    "No warnings or errors in any container.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun avertissement ni erreur dans aucun conteneur."
+          }
+        }
+      }
+    },
+    "Nothing ignored. In a log, select a line and choose Ignore Messages Like This.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rien n’est ignoré. Dans un journal, sélectionnez une ligne et choisissez Ignorer les messages comme celui-ci."
+          }
+        }
+      }
+    },
+    "Open %@ (Command-O)": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir %@ (Commande-O)"
+          }
+        }
+      }
+    },
+    "Open Porthole": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir Porthole"
+          }
+        }
+      }
+    },
+    "Open Porthole when you log in": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir Porthole à l’ouverture de session"
+          }
+        }
+      }
+    },
+    "Open Server's Web Page": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir la page web du serveur"
+          }
+        }
+      }
+    },
+    "Open Web Page": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir la page web"
+          }
+        }
+      }
+    },
+    "Overview": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aperçu"
+          }
+        }
+      }
+    },
+    "Paused": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En pause"
+          }
+        }
+      }
+    },
+    "Phone": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Téléphone"
+          }
+        }
+      }
+    },
+    "Pick a color": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisir une couleur"
+          }
+        }
+      }
+    },
+    "Pick a container to see its log.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez un conteneur pour voir son journal."
+          }
+        }
+      }
+    },
+    "Porthole": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porthole"
+          }
+        }
+      }
+    },
+    "Porthole connects with SSH and the docker command. Nothing is installed on the server.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porthole se connecte avec SSH et la commande docker. Rien n’est installé sur le serveur."
+          }
+        }
+      }
+    },
+    "Porthole empties the log files on the server. Everything logged so far is gone for good, here, in Dozzle and in docker logs. New messages appear as usual.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porthole vide les fichiers journaux sur le serveur. Tout ce qui y est écrit disparaît pour de bon, ici, dans Dozzle et dans docker logs. Les nouveaux messages apparaissent comme d’habitude."
+          }
+        }
+      }
+    },
+    "Porthole on GitHub": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porthole sur GitHub"
+          }
+        }
+      }
+    },
+    "Preview of the accent color": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aperçu de la couleur d’accentuation"
+          }
+        }
+      }
+    },
+    "Ran out of memory": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A manqué de mémoire"
+          }
+        }
+      }
+    },
+    "Read %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lu à %@"
+          }
+        }
+      }
+    },
+    "Read the last %lld hours of every container's log again (Shift-Command-P)": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relire les %lld dernières heures du journal de chaque conteneur (Maj-Commande-P)"
+          }
+        }
+      }
+    },
+    "Reading every container's log…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lecture du journal de chaque conteneur…"
+          }
+        }
+      }
+    },
+    "Reconnect": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Se reconnecter"
+          }
+        }
+      }
+    },
+    "Remove": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retirer"
+          }
+        }
+      }
+    },
+    "Report a Problem…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Signaler un problème…"
+          }
+        }
+      }
+    },
+    "Restart": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redémarrer"
+          }
+        }
+      }
+    },
+    "Restart %@ (Option-Command-R)": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redémarrer %@ (Option-Commande-R)"
+          }
+        }
+      }
+    },
+    "Restarted": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redémarré"
+          }
+        }
+      }
+    },
+    "Restarted %lld times in the last hour": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redémarré %lld fois dans la dernière heure"
+          }
+        }
+      }
+    },
+    "Restarting": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redémarrage"
+          }
+        }
+      }
+    },
+    "Running": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En marche"
+          }
+        }
+      }
+    },
+    "Running, health check starting": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En marche, contrôle de santé en cours"
+          }
+        }
+      }
+    },
+    "Running, healthy": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En marche, en bonne santé"
+          }
+        }
+      }
+    },
+    "Running, unhealthy": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En marche, en mauvaise santé"
+          }
+        }
+      }
+    },
+    "SSH address": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Adresse SSH"
+          }
+        }
+      }
+    },
+    "Scan Logs for Problems": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analyser les journaux"
+          }
+        }
+      }
+    },
+    "Scan Now": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analyser maintenant"
+          }
+        }
+      }
+    },
+    "Scan logs for problems": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Analyser les journaux"
+          }
+        }
+      }
+    },
+    "Select a message to see it whole, or to ignore messages like it.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sélectionnez un message pour le voir en entier, ou pour ignorer les messages semblables."
+          }
+        }
+      }
+    },
+    "Send Test": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyer un test"
+          }
+        }
+      }
+    },
+    "Sent.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Envoyé."
+          }
+        }
+      }
+    },
+    "Server": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Serveur"
+          }
+        }
+      }
+    },
+    "Settings…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réglages…"
+          }
+        }
+      }
+    },
+    "Ship the first build": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Livrer la première version"
+          }
+        }
+      }
+    },
+    "Show %@'s log": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher le journal de %@"
+          }
+        }
+      }
+    },
+    "Show %@'s warnings and errors of the last day": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher les avertissements et erreurs du dernier jour de %@"
+          }
+        }
+      }
+    },
+    "Show All %lld": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout afficher (%lld)"
+          }
+        }
+      }
+    },
+    "Show Fewer": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En afficher moins"
+          }
+        }
+      }
+    },
+    "Show Latest Lines": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher les dernières lignes"
+          }
+        }
+      }
+    },
+    "Show Porthole in the menu bar": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher Porthole dans la barre des menus"
+          }
+        }
+      }
+    },
+    "Show Warnings and Errors": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher les avertissements et erreurs"
+          }
+        }
+      }
+    },
+    "Show Warnings and Errors of the Last Day": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher les avertissements et erreurs du dernier jour"
+          }
+        }
+      }
+    },
+    "Show Whole Log": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher tout le journal"
+          }
+        }
+      }
+    },
+    "Since %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Depuis %@"
+          }
+        }
+      }
+    },
+    "Something keeps stopping it. Look at the messages just before each start.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quelque chose l’arrête sans cesse. Regardez les messages juste avant chaque démarrage."
+          }
+        }
+      }
+    },
+    "Stacks": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Piles"
+          }
+        }
+      }
+    },
+    "Start": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Démarrer"
+          }
+        }
+      }
+    },
+    "Start %@ (Option-Command-S)": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Démarrer %@ (Option-Commande-S)"
+          }
+        }
+      }
+    },
+    "Started": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Démarré"
+          }
+        }
+      }
+    },
+    "Startup": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Démarrage"
+          }
+        }
+      }
+    },
+    "Stop": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêter"
+          }
+        }
+      }
+    },
+    "Stop %@ (Option-Command-Period)": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêter %@ (Option-Commande-Point)"
+          }
+        }
+      }
+    },
+    "Stop %@?": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêter %@ ?"
+          }
+        }
+      }
+    },
+    "Stopped": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêtés"
+          }
+        }
+      }
+    },
+    "Stopped with exit code %lld": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêté avec le code de sortie %lld"
+          }
+        }
+      }
+    },
+    "Stopped with exit code %lld%@": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Stopped with exit code %1$lld%2$@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêté avec le code de sortie %1$lld%2$@"
+          }
+        }
+      }
+    },
+    "Stop…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêter…"
+          }
+        }
+      }
+    },
+    "Storage": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stockage"
+          }
+        }
+      }
+    },
+    "Tell Me About": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Me prévenir pour"
+          }
+        }
+      }
+    },
+    "Test Connection": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tester la connexion"
+          }
+        }
+      }
+    },
+    "The app stopped with an error. Its last messages say why.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’app s’est arrêtée sur une erreur. Ses derniers messages disent pourquoi."
+          }
+        }
+      }
+    },
+    "The container used more memory than it's allowed. Raise its memory limit or find what grows.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le conteneur a utilisé plus de mémoire que permis. Augmentez sa limite de mémoire ou trouvez ce qui grossit."
+          }
+        }
+      }
+    },
+    "The containers of %@ haven't logged anything yet.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les conteneurs de %@ n’ont encore rien écrit dans leur journal."
+          }
+        }
+      }
+    },
+    "The merged log of %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le journal combiné de %@"
+          }
+        }
+      }
+    },
+    "The same alert comes at most every 15 minutes. Click a notification to see the container's log.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La même alerte arrive au plus toutes les 15 minutes. Cliquez sur une notification pour voir le journal du conteneur."
+          }
+        }
+      }
+    },
+    "The token stays in your keychain.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le jeton reste dans votre trousseau."
+          }
+        }
+      }
+    },
+    "They stop counting as problems in the overview and in alerts, and show dimmed here.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ils ne comptent plus comme problèmes dans l’aperçu et les alertes, et apparaissent estompés ici."
+          }
+        }
+      }
+    },
+    "Today": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aujourd’hui"
+          }
+        }
+      }
+    },
+    "Try Again": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réessayer"
+          }
+        }
+      }
+    },
+    "Unhealthy": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En mauvaise santé"
+          }
+        }
+      }
+    },
+    "Up For": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En marche depuis"
+          }
+        }
+      }
+    },
+    "Updates": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mises à jour"
+          }
+        }
+      }
+    },
+    "Updates are off in this build.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les mises à jour sont désactivées dans cette version."
+          }
+        }
+      }
+    },
+    "Version %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@"
+          }
+        }
+      }
+    },
+    "Warnings and Errors, Last %lld Hours": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avertissements et erreurs des %lld dernières heures"
+          }
+        }
+      }
+    },
+    "Watching": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Surveillance"
+          }
+        }
+      }
+    },
+    "What Docker is telling you": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ce que Docker vous dit"
+          }
+        }
+      }
+    },
+    "What’s New in Porthole": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouveautés de Porthole"
+          }
+        }
+      }
+    },
+    "With the menu bar icon on, Porthole keeps watching after you close its window.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avec l’icône dans la barre des menus, Porthole continue de surveiller après la fermeture de sa fenêtre."
+          }
+        }
+      }
+    },
+    "all %lld containers": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "les %lld conteneurs"
+          }
+        }
+      }
+    },
+    "event.stopped": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Stopped"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêté"
+          }
+        }
+      }
+    },
+    "just now": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "à l’instant"
+          }
+        }
+      }
+    },
+    "of %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "sur %@"
+          }
+        }
+      }
+    },
+    "ssh's default": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "celle de ssh par défaut"
+          }
+        }
+      }
+    },
+    "status.stopped": {
+      "extractionState": "extracted_with_value",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "new",
+            "value": "Stopped"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arrêté"
+          }
+        }
+      }
+    },
+    "user@host, or a Host from ~/.ssh/config. Porthole runs the docker command there.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "utilisateur@hôte, ou un Host de ~/.ssh/config. Porthole y exécute la commande docker."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

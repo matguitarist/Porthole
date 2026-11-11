@@ -11,4 +11,5 @@ rm -rf ~/Library/Saved\ Application\ State/com.mathieuares.porthole.savedState
 # Seed data only fills an empty store, so start from nothing.
 rm -f $store $store-shm $store-wal
 rm -rf $shots
-APP_STORE=$store APP_SEED=1 APP_SNAPSHOT=$shots $app
+# The app in English whatever the Mac uses; APP_LANGUAGE=fr for French.
+APP_STORE=$store APP_SEED=1 APP_SNAPSHOT=$shots $app -AppleLanguages "(${APP_LANGUAGE:-en})"

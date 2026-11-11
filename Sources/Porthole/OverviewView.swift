@@ -93,7 +93,7 @@ struct ServerTiles: View {
             }
             .help("Memory in use (not counting caches) over the last \(Format.window(load.memoryUsed.count))")
             Tile(title: "Containers", symbol: "shippingbox") {
-                BigNumber("\(running) running")
+                BigNumber(String(localized: "\(running) running"))
                 Spacer(minLength: 0)
                 HStack(spacing: Space.sm) {
                     Text("\(stopped) stopped")
@@ -136,7 +136,7 @@ struct StorageTiles: View {
                       ?? [GridItem(.adaptive(minimum: 200), spacing: Space.md)], alignment: .leading, spacing: Space.md) {
                 ForEach(disks) { disk in
                     let full = disk.fraction >= 0.9
-                    Tile(title: disk.title, symbol: disk.mount == "/boot" ? "memorychip" : "internaldrive") {
+                    Tile(title: LocalizedStringKey(disk.title), symbol: disk.mount == "/boot" ? "memorychip" : "internaldrive") {
                         HStack(alignment: .firstTextBaseline) {
                             BigNumber(String(format: "%.0f%%", disk.fraction * 100))
                             if full {
@@ -259,7 +259,7 @@ struct ProblemRow: View {
     private var latest: String? {
         guard let line = summary.latest else { return nil }
         let when = line.date.map { $0.formatted(.relative(presentation: .named)) } ?? ""
-        return "\(when): \(line.message)"
+        return when.isEmpty ? line.message : "\(when): \(line.message)"
     }
 }
 
@@ -271,7 +271,11 @@ struct CountChip: View {
 
     var body: some View {
         let isError = level >= .error
-        Label("\(count)\(capped ? "+" : "") \(isError ? (count == 1 ? "error" : "errors") : (count == 1 ? "warning" : "warnings"))",
+        let more = capped ? "+" : ""
+        let text = isError
+            ? (count == 1 ? String(localized: "1\(more) error") : String(localized: "\(count)\(more) errors"))
+            : (count == 1 ? String(localized: "1\(more) warning") : String(localized: "\(count)\(more) warnings"))
+        Label(text,
               systemImage: isError ? "xmark.octagon.fill" : "exclamationmark.triangle.fill")
             .font(.callout.monospacedDigit())
             .foregroundStyle(isError ? .red : .orange)
@@ -413,7 +417,7 @@ struct OverviewRow<Trailing: View>: View {
 }
 
 struct Tile<Content: View>: View {
-    let title: String
+    let title: LocalizedStringKey
     let symbol: String
     @ViewBuilder let content: Content
 
@@ -439,8 +443,8 @@ struct BigNumber: View {
 }
 
 struct SectionTitle: View {
-    let text: String
-    init(_ text: String) { self.text = text }
+    let text: LocalizedStringKey
+    init(_ text: LocalizedStringKey) { self.text = text }
 
     var body: some View {
         Text(text).font(.headline)
@@ -451,9 +455,9 @@ extension Format {
     /// "6 days 4 h", "3 h 12 min".
     static func duration(_ seconds: TimeInterval) -> String {
         let minutes = Int(seconds) / 60, hours = minutes / 60, days = hours / 24
-        if days > 0 { return "\(days) day\(days == 1 ? "" : "s") \(hours % 24) h" }
-        if hours > 0 { return "\(hours) h \(minutes % 60) min" }
-        return "\(minutes) min"
+        if days > 0 { return days == 1 ? String(localized: "1 day \(hours % 24) h") : String(localized: "\(days) days \(hours % 24) h") }
+        if hours > 0 { return String(localized: "\(hours) h \(minutes % 60) min") }
+        return String(localized: "\(minutes) min")
     }
 
     static func disk(_ bytes: Double) -> String {

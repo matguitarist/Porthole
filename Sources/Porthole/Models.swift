@@ -495,7 +495,7 @@ final class AppModel {
             confirmClear = ClearRequest(names: names, title: names[0])
         } else {
             let all = names ?? containers.map(\.name)
-            confirmClear = ClearRequest(names: all, title: names == nil ? "all \(all.count) containers" : "\(all.count) containers")
+            confirmClear = ClearRequest(names: all, title: names == nil ? String(localized: "all \(all.count) containers") : String(localized: "\(all.count) containers"))
         }
     }
 

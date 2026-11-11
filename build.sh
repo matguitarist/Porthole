@@ -55,6 +55,11 @@ if [[ -d "$here/Icon/AppIcon.icon" ]]; then
   fi
   cp -X "$car" "$here/Resources/AppIcon.icns" "$app/Contents/Resources/"
 fi
+# Translations: Localization/*.xcstrings -> <lang>.lproj/*.strings
+for catalog in "$here"/Localization/*.xcstrings(N); do
+  xcrun xcstringstool compile "$catalog" --output-directory "$app/Contents/Resources"
+done
+mkdir -p "$app/Contents/Resources/en.lproj"
 # Sparkle, for automatic updates.
 framework="$scratch/$config/Sparkle.framework"
 if [[ -d "$framework" ]]; then
