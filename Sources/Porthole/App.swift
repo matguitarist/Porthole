@@ -72,6 +72,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// The self-test's result becomes the exit code, after a normal quit.
     func applicationWillTerminate(_ notification: Notification) {
+        // Log, event and stats streams run through the shared SSH connection: closing it ends them.
+        (AppModel.current?.client as? SSHDocker)?.disconnectNow()
         if SelfTest.requested { exit(SelfTest.exitCode) }
     }
 }

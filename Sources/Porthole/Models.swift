@@ -129,8 +129,12 @@ final class AppModel {
         didSet { if !Store.isOverridden { UserDefaults.standard.set(settingsTab.rawValue, forKey: "settings.tab") } }
     }
 
+    /// For the app delegate at quit.
+    static weak var current: AppModel?
+
     init() {
         client = Self.makeClient()
+        Self.current = self
     }
 
     static func makeClient() -> any DockerClient {

@@ -178,7 +178,7 @@ struct DockerTests {
 
     @Test("Stats lines start with terminal codes")
     func stats() throws {
-        let line = "\u{1B}[H\u{1B}[J" + #"{"BlockIO":"260MB / 9.87MB","CPUPerc":"12.50%","Container":"517203e83d04","ID":"517203e83d04","MemPerc":"1.2%","MemUsage":"512MiB / 31.2GiB","Name":"cleanuparr"}"#
+        let line = "\u{1B}[H\u{1B}[J" + #"{"BlockIO":"260MB / 9.87MB","CPUPerc":"12.50%","Container":"517203e83d04","ID":"517203e83d04","MemPerc":"1.2%","MemUsage":"512MiB / 31.2GiB","Name":"cleanuparr"}"# + "\u{1B}[K"
         let stats = try #require(ContainerStats.parse(line))
         #expect(stats.cpu == 12.5)
         #expect(stats.memoryBytes == 512 * 1_048_576)
@@ -235,5 +235,19 @@ struct InsightTests {
         #expect(sick.map(\.id) == [ContainerInsights.healthID, ContainerInsights.restartID])
         #expect(sick.first?.detail.contains("connection refused") == true)
         #expect(sick.last?.title == "Restarted 5 times in the last hour")
+    }
+}
+
+@Suite("Line reader")
+struct LineReaderTests {
+    @Test("Lines arrive one by one, with CRLF and a last line without a newline")
+    func lines() throws {
+        let pipe = Pipe()
+        pipe.fileHandleForWriting.write(Data("one\r\ntwo\nthr".utf8))
+        pipe.fileHandleForWriting.write(Data("ee".utf8))
+        try pipe.fileHandleForWriting.close()
+        var lines: [String] = []
+        LineReader.read(pipe.fileHandleForReading) { lines.append($0) }
+        #expect(lines == ["one", "two", "three"])
     }
 }

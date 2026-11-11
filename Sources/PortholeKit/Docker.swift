@@ -109,9 +109,9 @@ public struct ContainerStats: Hashable, Sendable {
         self.memoryLimitBytes = memoryLimitBytes
     }
 
-    /// Reads a line; `docker stats` starts each round with terminal codes, so
-    /// the JSON starts at the first "{".
-    public static func parse(_ line: some StringProtocol) -> ContainerStats? {
+    /// Reads a line; `docker stats` wraps lines in terminal codes.
+    public static func parse(_ raw: some StringProtocol) -> ContainerStats? {
+        let line = ANSI.strip(raw)   // "\u{1B}[H" before, "\u{1B}[K" after each line
         guard let brace = line.firstIndex(of: "{"),
               let object = try? JSONSerialization.jsonObject(with: Data(line[brace...].utf8)) as? [String: Any],
               let id = object["ID"] as? String ?? object["Container"] as? String else { return nil }

@@ -77,6 +77,13 @@ public actor SSHDocker: DockerClient {
         masterReady = true
     }
 
+    /// Closes the shared connection at once, ending every stream through it.
+    /// For quitting: started commands would otherwise outlive the app.
+    public nonisolated func disconnectNow() {
+        guard let child = try? Spawn.launch("/usr/bin/ssh", sshArguments(extra: ["-O", "exit"]), stdout: .null, stderr: .null) else { return }
+        _ = Spawn.wait(child.pid)
+    }
+
     /// Closes the shared connection (on quit, or when the address changes).
     public func disconnect() async {
         _ = try? await Self.run(sshArguments(extra: ["-O", "exit"]))
@@ -136,23 +143,21 @@ public actor SSHDocker: DockerClient {
             let task = Task.detached {
                 do {
                     try await self.ensureMaster()
-                    let process = Process()
-                    process.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
-                    process.arguments = self.sshArguments(remote)
-                    let out = Pipe()
-                    process.standardOutput = out
-                    process.standardError = out
-                    process.standardInput = FileHandle.nullDevice
-                    try process.run()
-                    guard box.set(process) else { return }
-                    for try await line in out.fileHandleForReading.bytes.lines {
-                        continuation.yield(line)
+                    let child = try Spawn.launch("/usr/bin/ssh", self.sshArguments(remote), stdout: .pipe, stderr: .merged)
+                    guard box.set(child.pid), let out = child.stdout else { return }
+                    // A thread of its own that hands over each line as soon as it
+                    // arrives (FileHandle.bytes waits for a big chunk first).
+                    let status = await withCheckedContinuation { (done: CheckedContinuation<Int32, Never>) in
+                        Thread.detachNewThread {
+                            LineReader.read(out) { continuation.yield($0) }
+                            done.resume(returning: Spawn.wait(child.pid))
+                        }
                     }
-                    process.waitUntilExit()
-                    if Task.isCancelled || process.terminationStatus == 0 || process.terminationReason == .uncaughtSignal {
+                    box.finished()
+                    if Task.isCancelled || status == 0 || status > 128 {
                         continuation.finish()
                     } else {
-                        continuation.finish(throwing: DockerError.command(status: process.terminationStatus, message: ""))
+                        continuation.finish(throwing: DockerError.command(status: status, message: ""))
                     }
                 } catch {
                     continuation.finish(throwing: error)
@@ -171,47 +176,38 @@ public actor SSHDocker: DockerClient {
     static func run(_ arguments: [String], background: Bool = false) async throws -> String {
         try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
-                let process = Process()
-                process.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
-                process.arguments = arguments
-                process.standardInput = FileHandle.nullDevice
-                let out = Pipe(), err = Pipe()
                 let errorFile = FileManager.default.temporaryDirectory.appending(path: "porthole-ssh-\(UUID().uuidString).txt")
-                if background {
-                    FileManager.default.createFile(atPath: errorFile.path(percentEncoded: false), contents: nil)
-                    process.standardOutput = FileHandle.nullDevice
-                    process.standardError = try? FileHandle(forWritingTo: errorFile)
-                } else {
-                    process.standardOutput = out
-                    process.standardError = err
-                }
-                do { try process.run() } catch {
+                let child: Spawn.Child
+                do {
+                    child = try Spawn.launch("/usr/bin/ssh", arguments,
+                                             stdout: background ? .null : .pipe,
+                                             stderr: background ? .file(errorFile.path(percentEncoded: false)) : .pipe)
+                } catch {
                     continuation.resume(throwing: error)
                     return
                 }
                 var output = Data(), errors = Data()
-                if !background {
+                if let out = child.stdout, let err = child.stderr {
                     let group = DispatchGroup()
                     let errorBox = DataBox()
                     group.enter()
                     DispatchQueue.global().async {
-                        errorBox.data = err.fileHandleForReading.readDataToEndOfFile()
+                        errorBox.data = err.readDataToEndOfFile()
                         group.leave()
                     }
-                    output = out.fileHandleForReading.readDataToEndOfFile()
+                    output = out.readDataToEndOfFile()
                     group.wait()
                     errors = errorBox.data
                 }
-                process.waitUntilExit()
+                let status = Spawn.wait(child.pid)
                 if background {
                     errors = (try? Data(contentsOf: errorFile)) ?? Data()
                     try? FileManager.default.removeItem(at: errorFile)
                 }
-                if process.terminationStatus == 0 {
+                if status == 0 {
                     continuation.resume(returning: String(decoding: output, as: UTF8.self))
                 } else {
-                    continuation.resume(throwing: DockerError.command(status: process.terminationStatus,
-                                                                      message: String(decoding: errors, as: UTF8.self)))
+                    continuation.resume(throwing: DockerError.command(status: status, message: String(decoding: errors, as: UTF8.self)))
                 }
             }
         }
@@ -230,22 +226,46 @@ private final class DataBox: @unchecked Sendable {
 /// The ssh process behind a stream, so cancelling can stop it.
 private final class ProcessBox: @unchecked Sendable {
     private let lock = NSLock()
-    private var process: Process?
+    private var pid: pid_t?
     private var cancelled = false
 
     /// False when the stream was already cancelled; the process is stopped.
-    func set(_ process: Process) -> Bool {
+    func set(_ pid: pid_t) -> Bool {
         lock.withLock {
-            if cancelled { process.terminate(); return false }
-            self.process = process
+            if cancelled { kill(pid, SIGTERM); return false }
+            self.pid = pid
             return true
         }
     }
 
+    /// The process was reaped: its pid may belong to another process now.
+    func finished() { lock.withLock { pid = nil } }
+
     func cancel() {
         lock.withLock {
             cancelled = true
-            if let process, process.isRunning { process.terminate() }
+            if let pid { kill(pid, SIGTERM) }
         }
+    }
+}
+
+/// Splits a pipe's output into lines as it arrives, with CRLF endings.
+enum LineReader {
+    static func read(_ handle: FileHandle, line: (String) -> Void) {
+        var buffer = Data()
+        while true {
+            let chunk = handle.availableData   // blocks until something arrives; empty at the end
+            if chunk.isEmpty { break }
+            buffer.append(chunk)
+            var start = buffer.startIndex
+            while let newline = buffer[start...].firstIndex(of: 0x0A) {
+                var end = newline
+                if end > start, buffer[buffer.index(before: end)] == 0x0D { end = buffer.index(before: end) }
+                line(String(decoding: buffer[start..<end], as: UTF8.self))
+                start = buffer.index(after: newline)
+            }
+            buffer.removeSubrange(buffer.startIndex..<start)
+        }
+        if !buffer.isEmpty { line(String(decoding: buffer, as: UTF8.self)) }
     }
 }
