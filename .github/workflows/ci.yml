@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  app:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v5
+      - name: Swift version
+        run: swift --version
+      - name: Unit tests
+        # The Live tests need the real server.
+        run: swift test --skip Live
+      - name: Build the app
+        run: swift build -c release
+
+  agent:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: agent
+    steps:
+      - uses: actions/checkout@v5
+      - name: Tests
+        run: cargo test --locked
+      - name: Lints
+        run: cargo clippy --locked -- -D warnings
+      - name: Image
+        run: docker build -t porthole-agent .
