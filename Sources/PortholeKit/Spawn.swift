@@ -16,6 +16,8 @@ enum Spawn {
 
     struct Child {
         let pid: pid_t
+        /// With `keepStdinOpen`: the write end. Closing it gives the child end of file.
+        let stdin: FileHandle?
         let stdout: FileHandle?
         let stderr: FileHandle?
     }
@@ -26,7 +28,10 @@ enum Spawn {
         return unsafeBitCast(symbol, to: Disclaim.self)
     }()
 
-    static func launch(_ path: String, _ arguments: [String], stdout: Output, stderr: Output) throws -> Child {
+    /// With `keepStdinOpen`, stdin is a pipe that stays open until the caller
+    /// closes `Child.stdin`; otherwise it is /dev/null.
+    static func launch(_ path: String, _ arguments: [String], stdout: Output, stderr: Output,
+                       keepStdinOpen: Bool = false) throws -> Child {
         var attributes: posix_spawnattr_t?
         posix_spawnattr_init(&attributes)
         defer { posix_spawnattr_destroy(&attributes) }
@@ -37,7 +42,14 @@ enum Spawn {
         var actions: posix_spawn_file_actions_t?
         posix_spawn_file_actions_init(&actions)
         defer { posix_spawn_file_actions_destroy(&actions) }
-        posix_spawn_file_actions_addopen(&actions, 0, "/dev/null", O_RDONLY, 0)
+        var inPipe: Pipe?
+        if keepStdinOpen {
+            let pipe = Pipe()
+            inPipe = pipe
+            posix_spawn_file_actions_adddup2(&actions, pipe.fileHandleForReading.fileDescriptor, 0)
+        } else {
+            posix_spawn_file_actions_addopen(&actions, 0, "/dev/null", O_RDONLY, 0)
+        }
 
         var outPipe: Pipe?
         var errPipe: Pipe?
@@ -71,8 +83,12 @@ enum Spawn {
         // The child has its own copies; the write ends must close here, or reads never end.
         try? outPipe?.fileHandleForWriting.close()
         try? errPipe?.fileHandleForWriting.close()
-        guard result == 0 else { throw POSIXError(POSIXErrorCode(rawValue: result) ?? .EINVAL) }
-        return Child(pid: pid, stdout: outPipe?.fileHandleForReading, stderr: errPipe?.fileHandleForReading)
+        try? inPipe?.fileHandleForReading.close()
+        guard result == 0 else {
+            try? inPipe?.fileHandleForWriting.close()
+            throw POSIXError(POSIXErrorCode(rawValue: result) ?? .EINVAL)
+        }
+        return Child(pid: pid, stdin: inPipe?.fileHandleForWriting, stdout: outPipe?.fileHandleForReading, stderr: errPipe?.fileHandleForReading)
     }
 
     /// Waits for the child (blocking) and returns its exit code, or 128 + the signal that ended it.

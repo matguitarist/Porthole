@@ -210,15 +210,29 @@ public actor SSHDocker: DockerClient {
         return await Task.detached { ProblemSummary.parse(output, ignoring: rules) }.value
     }
 
-    /// A long-running remote command, line by line. Cancelling the stream ends the command.
+    /// Runs `command` on the server so that it ends when the SSH channel closes.
+    /// Without a terminal, a remote command that writes nothing (`docker logs -f`
+    /// on a quiet container) never notices that ssh went away and runs forever,
+    /// and dockerd keeps following its log. Here the command runs in its own
+    /// process group with stdin from /dev/null; a watcher reads the channel's
+    /// stdin, which this side holds open, and kills the group at end of file.
+    /// When the command ends first, the watcher goes too.
+    static func hangupGuard(_ command: String) -> String {
+        "set -m; { \(command); } </dev/null & p=$!; { cat >/dev/null; kill -TERM -- -$p; } >/dev/null 2>&1 & w=$!; "
+            + "wait $p; s=$?; kill -- -$w 2>/dev/null; exit $s"
+    }
+
+    /// A long-running remote command, line by line. Cancelling the stream ends the
+    /// command, here and on the server (see `hangupGuard`).
     nonisolated func stream(_ remote: String) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             let box = ProcessBox()
             let task = Task.detached {
                 do {
                     try await self.ensureMaster()
-                    let child = try Spawn.launch("/usr/bin/ssh", self.sshArguments(remote), stdout: .pipe, stderr: .merged)
-                    guard box.set(child.pid), let out = child.stdout else { return }
+                    let child = try Spawn.launch("/usr/bin/ssh", self.sshArguments(Self.hangupGuard(remote)),
+                                                 stdout: .pipe, stderr: .merged, keepStdinOpen: true)
+                    guard box.set(child.pid, stdin: child.stdin), let out = child.stdout else { return }
                     // A thread of its own that hands over each line as soon as it
                     // arrives (FileHandle.bytes waits for a big chunk first).
                     let status = await withCheckedContinuation { (done: CheckedContinuation<Int32, Never>) in
@@ -301,23 +315,38 @@ private final class DataBox: @unchecked Sendable {
 private final class ProcessBox: @unchecked Sendable {
     private let lock = NSLock()
     private var pid: pid_t?
+    private var stdin: FileHandle?
     private var cancelled = false
 
     /// False when the stream was already cancelled; the process is stopped.
-    func set(_ pid: pid_t) -> Bool {
+    func set(_ pid: pid_t, stdin: FileHandle? = nil) -> Bool {
         lock.withLock {
-            if cancelled { kill(pid, SIGTERM); return false }
+            if cancelled {
+                try? stdin?.close()
+                kill(pid, SIGTERM)
+                return false
+            }
             self.pid = pid
+            self.stdin = stdin
             return true
         }
     }
 
     /// The process was reaped: its pid may belong to another process now.
-    func finished() { lock.withLock { pid = nil } }
+    func finished() {
+        lock.withLock {
+            pid = nil
+            try? stdin?.close()
+            stdin = nil
+        }
+    }
 
     func cancel() {
         lock.withLock {
             cancelled = true
+            // End of file first, so the server's side ends even if the signal races.
+            try? stdin?.close()
+            stdin = nil
             if let pid { kill(pid, SIGTERM) }
         }
     }
