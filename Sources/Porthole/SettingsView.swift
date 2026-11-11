@@ -1,4 +1,5 @@
 import PortholeKit
+import ServiceManagement
 import SwiftUI
 
 /// The Settings window (Command-Comma). One tab per topic. Each tab is a
@@ -22,12 +23,12 @@ struct SettingsView: View {
     private func page(_ tab: SettingsTab) -> some View {
         Form {
             switch tab {
+            case .general: GeneralSettingsForm()
             case .server: ServerSettingsForm()
             case .alerts: AlertSettingsForm()
             case .ignored: IgnoredSettingsForm()
-            case .appearance:
-                AppearanceSettings()
-                MenuBarSettings()
+            case .appearance: AppearanceSettings()
+            case .updates: UpdateSettingsForm()
             }
         }
         .formStyle(.grouped)
@@ -38,25 +39,29 @@ struct SettingsView: View {
 
 /// The Settings tabs. Snapshot mode walks through every case.
 enum SettingsTab: String, CaseIterable, Identifiable {
-    case server, alerts, ignored, appearance
+    case general, server, alerts, ignored, appearance, updates
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
+        case .general: "General"
         case .server: "Server"
         case .alerts: "Alerts"
         case .ignored: "Ignored"
         case .appearance: "Appearance"
+        case .updates: "Updates"
         }
     }
 
     var symbol: String {
         switch self {
+        case .general: "gearshape"
         case .server: "server.rack"
         case .alerts: "bell.badge"
         case .ignored: "eye.slash"
         case .appearance: "paintpalette"
+        case .updates: "arrow.down.circle"
         }
     }
 }
@@ -152,7 +157,7 @@ struct AlertSettingsForm: View {
         Section {
             Toggle("Crashes, out of memory, unhealthy, restart loops", isOn: $crashes)
             Toggle("New errors in a container's log", isOn: $newErrors)
-                .help("Checked at every scan, about every 5 minutes")
+                .help("Checked at every scan (Settings > General)")
         } header: {
             Text("Tell Me About")
         } footer: {
@@ -225,16 +230,79 @@ struct IgnoredSettingsForm: View {
     }
 }
 
-struct MenuBarSettings: View {
+struct GeneralSettingsForm: View {
     @Environment(AppModel.self) private var model
+    @AppStorage(AppModel.scanIntervalKey) private var scanMinutes = 5
+    @State private var opensAtLogin = LoginItem.isOn
+    @State private var loginError: String?
 
     var body: some View {
         @Bindable var model = model
         Section {
+            Toggle("Open Porthole when you log in", isOn: $opensAtLogin)
+                .onChange(of: opensAtLogin) { loginError = LoginItem.set(opensAtLogin) }
+            if let loginError {
+                Text(loginError).font(.caption).foregroundStyle(.red)
+            }
             Toggle("Show Porthole in the menu bar", isOn: $model.showInMenuBar)
+                .help("A status icon with the server's load and what needs a look")
+        } header: {
+            Text("Startup")
         } footer: {
             Text("With the menu bar icon on, Porthole keeps watching after you close its window.")
                 .foregroundStyle(.secondary)
+        }
+        Section {
+            Picker("Scan logs for problems", selection: $scanMinutes) {
+                Text("Every minute").tag(1)
+                Text("Every 5 minutes").tag(5)
+                Text("Every 15 minutes").tag(15)
+                Text("Every hour").tag(60)
+            }
+            .help("How often Porthole reads the last day's warnings and errors, for the overview and new-error alerts")
+        } header: {
+            Text("Watching")
+        }
+    }
+}
+
+struct UpdateSettingsForm: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        @Bindable var model = model
+        Section("Automatic Updates") {
+            Toggle(isOn: $model.checksForUpdates) {
+                Text("Check for updates automatically")
+                Text(note)
+            }
+            .disabled(!Updater.shared.isAvailable)
+            LabeledContent("Version \(Links.version)") {
+                Button("Check Now") { Updater.shared.checkForUpdates() }
+                    .disabled(!Updater.shared.isAvailable)
+            }
+        }
+    }
+
+    private var note: String {
+        guard Updater.shared.isAvailable else { return "Updates are off in this build." }
+        guard let last = Updater.shared.lastCheck else { return "Looks once a day for a new version on GitHub." }
+        return "Looks once a day for a new version on GitHub. Last checked \(last.formatted(.relative(presentation: .named)))."
+    }
+}
+
+/// Open at login, through the system's login items (System Settings > General > Login Items).
+enum LoginItem {
+    static var isOn: Bool { SMAppService.mainApp.status == .enabled }
+
+    /// Returns an error to show, or nil.
+    static func set(_ on: Bool) -> String? {
+        guard !Store.isOverridden else { return nil }
+        do {
+            if on { try SMAppService.mainApp.register() } else { try SMAppService.mainApp.unregister() }
+            return nil
+        } catch {
+            return error.localizedDescription
         }
     }
 }

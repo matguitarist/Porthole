@@ -31,15 +31,31 @@ struct PortholeApp: App {
             SidebarCommands()
             ToolbarCommands()
             CommandGroup(replacing: .newItem) {}
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") { Updater.shared.checkForUpdates() }
+                    .disabled(!Updater.shared.isAvailable)
+            }
             CommandGroup(before: .sidebar) {
                 Button("Overview", systemImage: "gauge.with.dots.needle.33percent") { model.page = .overview }
                     .keyboardShortcut("0")
+                Divider()
+            }
+            CommandMenu("Server") {
                 Button("Scan Logs for Problems", systemImage: "exclamationmark.magnifyingglass") {
                     Task { await model.scanProblems() }
                 }
                 .keyboardShortcut("p", modifiers: [.command, .shift])
-                .disabled(model.scanningProblems)
+                .disabled(model.scanningProblems || model.connection != .connected)
+                Button("Clear All Logs on Server…", systemImage: "trash") { model.requestClearLogs() }
+                    .keyboardShortcut(.delete, modifiers: [.command, .shift])
+                    .disabled(model.clearing || model.containers.isEmpty)
                 Divider()
+                Button("Open Server's Web Page", systemImage: "safari") {
+                    if let url = URL(string: "http://\(ServerSettings.host)") { NSWorkspace.shared.open(url) }
+                }
+                .keyboardShortcut("o", modifiers: [.command, .shift])
+                Button("Reconnect", systemImage: "arrow.triangle.2.circlepath") { model.reconnect() }
+                    .keyboardShortcut("r", modifiers: [.command, .shift])
             }
             CommandMenu("Container") {
                 Button("Start", systemImage: "play") { model.request(.start) }
@@ -52,14 +68,33 @@ struct PortholeApp: App {
                     .keyboardShortcut("r", modifiers: [.command, .option])
                     .disabled(!model.canPerform(.restart))
                 Divider()
+                Button("Show Warnings and Errors of the Last Day", systemImage: "exclamationmark.triangle") {
+                    if let name = model.selection { model.open(name, problemsOnly: true) }
+                }
+                .keyboardShortcut("e", modifiers: [.command, .option])
+                .disabled(model.selection == nil)
+                Button("Show Whole Log", systemImage: "text.alignleft") {
+                    if let name = model.selection { model.open(name) }
+                }
+                .keyboardShortcut("l", modifiers: [.command, .option])
+                .disabled(model.selection == nil)
+                Button("Clear Log on Server…", systemImage: "trash") {
+                    if let page = model.page, let log = model.log(for: page) { model.requestClearLogs(log.names) }
+                }
+                .keyboardShortcut(.delete, modifiers: [.command, .option])
+                .disabled(model.page == nil || model.page == .overview || model.clearing)
+                Divider()
                 Button("Open Web Page", systemImage: "safari") {
                     if let url = model.webUI() { NSWorkspace.shared.open(url) }
                 }
                 .keyboardShortcut("o")
                 .disabled(model.webUI() == nil)
+            }
+            CommandGroup(replacing: .help) {
+                Button("Porthole on GitHub") { NSWorkspace.shared.open(Links.repository) }
+                Button("What’s New in Porthole") { NSWorkspace.shared.open(Links.releaseNotes) }
                 Divider()
-                Button("Reconnect", systemImage: "arrow.triangle.2.circlepath") { model.reconnect() }
-                    .keyboardShortcut("r", modifiers: [.command, .shift])
+                Button("Report a Problem…") { NSWorkspace.shared.open(Links.newIssue) }
             }
         }
 
@@ -80,6 +115,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         NSApp.setActivationPolicy(.regular)
         NSApp.activate()
         if !Store.isOverridden { UNUserNotificationCenter.current().delegate = self }
+        _ = Updater.shared
     }
 
     /// With the menu bar icon, Porthole keeps watching after the window closes.

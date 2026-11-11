@@ -262,7 +262,7 @@ final class AppModel {
     private var watchers: [Task<Void, Never>] = []
     private var refreshTask: Task<Void, Never>?
     /// Settings reopens on the last tab. Test and snapshot runs leave it alone.
-    var settingsTab: SettingsTab = SettingsTab(rawValue: UserDefaults.standard.string(forKey: "settings.tab") ?? "") ?? .server {
+    var settingsTab: SettingsTab = SettingsTab(rawValue: UserDefaults.standard.string(forKey: "settings.tab") ?? "") ?? .general {
         didSet { if !Store.isOverridden { UserDefaults.standard.set(settingsTab.rawValue, forKey: "settings.tab") } }
     }
 
@@ -408,11 +408,20 @@ final class AppModel {
     }
     @ObservationIgnored private var hostLoadPending = HostLoad()
 
+    static let scanIntervalKey = "scan.minutes"
+
     private func scanProblemsRegularly() async {
         while !Task.isCancelled {
             await scanProblems()
-            try? await Task.sleep(for: .seconds(300))
+            let minutes = UserDefaults.standard.object(forKey: Self.scanIntervalKey) as? Int ?? 5
+            try? await Task.sleep(for: .seconds(max(1, minutes) * 60))
         }
+    }
+
+    /// Sparkle's daily check, for Settings > Updates.
+    var checksForUpdates: Bool {
+        get { access(keyPath: \.checksForUpdates); return Updater.shared.automaticallyChecks }
+        set { withMutation(keyPath: \.checksForUpdates) { Updater.shared.automaticallyChecks = newValue } }
     }
 
     /// Reads the last day's warnings and errors of every container.
