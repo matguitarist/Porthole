@@ -11,7 +11,12 @@ public enum DockerError: LocalizedError, Equatable {
         switch self {
         case .command(let status, let message):
             let text = message.trimmingCharacters(in: .whitespacesAndNewlines)
-            if status == 255 { return text.isEmpty ? "Couldn't connect over SSH." : text }
+            if status == 255 {
+                if text.contains("No route to host") {
+                    return text + "\n\nIf the server is on your network, allow Porthole in System Settings > Privacy & Security > Local Network, then try again."
+                }
+                return text.isEmpty ? "Couldn't connect over SSH." : text
+            }
             return text.isEmpty ? "The command failed (exit code \(status))." : text
         }
     }
@@ -67,7 +72,7 @@ public actor SSHDocker: DockerClient {
         masterReady = false
         if (try? await Self.run(sshArguments(extra: ["-O", "check"]))) == nil {
             _ = try await Self.run(sshArguments(extra: ["-f", "-N", "-o", "ControlMaster=yes", "-o", "ControlPersist=600"]),
-                                   discardOutput: true)
+                                   background: true)
         }
         masterReady = true
     }
@@ -161,23 +166,31 @@ public actor SSHDocker: DockerClient {
     }
 
     /// Runs ssh and returns its output; throws with its error text when it fails.
-    static func run(_ arguments: [String], discardOutput: Bool = false) async throws -> String {
+    /// With `background`, ssh forks a master that keeps its output open, so
+    /// its errors go to a file instead of a pipe that would never close.
+    static func run(_ arguments: [String], background: Bool = false) async throws -> String {
         try await withCheckedThrowingContinuation { continuation in
             DispatchQueue.global(qos: .userInitiated).async {
                 let process = Process()
                 process.executableURL = URL(fileURLWithPath: "/usr/bin/ssh")
                 process.arguments = arguments
                 process.standardInput = FileHandle.nullDevice
-                // A backgrounded master keeps its output open: never read from it.
                 let out = Pipe(), err = Pipe()
-                process.standardOutput = discardOutput ? FileHandle.nullDevice : out
-                process.standardError = discardOutput ? FileHandle.nullDevice : err
+                let errorFile = FileManager.default.temporaryDirectory.appending(path: "porthole-ssh-\(UUID().uuidString).txt")
+                if background {
+                    FileManager.default.createFile(atPath: errorFile.path(percentEncoded: false), contents: nil)
+                    process.standardOutput = FileHandle.nullDevice
+                    process.standardError = try? FileHandle(forWritingTo: errorFile)
+                } else {
+                    process.standardOutput = out
+                    process.standardError = err
+                }
                 do { try process.run() } catch {
                     continuation.resume(throwing: error)
                     return
                 }
                 var output = Data(), errors = Data()
-                if !discardOutput {
+                if !background {
                     let group = DispatchGroup()
                     let errorBox = DataBox()
                     group.enter()
@@ -190,12 +203,15 @@ public actor SSHDocker: DockerClient {
                     errors = errorBox.data
                 }
                 process.waitUntilExit()
+                if background {
+                    errors = (try? Data(contentsOf: errorFile)) ?? Data()
+                    try? FileManager.default.removeItem(at: errorFile)
+                }
                 if process.terminationStatus == 0 {
                     continuation.resume(returning: String(decoding: output, as: UTF8.self))
                 } else {
-                    let message = String(decoding: errors, as: UTF8.self)
                     continuation.resume(throwing: DockerError.command(status: process.terminationStatus,
-                                                                      message: discardOutput ? "Couldn't connect to the server over SSH. Check the address and key in Settings." : message))
+                                                                      message: String(decoding: errors, as: UTF8.self)))
                 }
             }
         }

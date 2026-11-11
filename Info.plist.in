@@ -10,7 +10,8 @@
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleShortVersionString</key><string>0.1</string>
 <key>CFBundleVersion</key><string>__BUILD__</string>
-<key>LSMinimumSystemVersion</key><string>26.0</string>
+<key>NSLocalNetworkUsageDescription</key><string>Porthole connects to your Docker server on the local network over SSH to show its containers and logs.</string>
+  <key>LSMinimumSystemVersion</key><string>26.0</string>
 <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
 <key>NSHighResolutionCapable</key><true/>
 <key>NSPrincipalClass</key><string>NSApplication</string>
