@@ -169,6 +169,12 @@ struct DockerTests {
         #expect(container.labels["a"] == "b,c")
     }
 
+    @Test("A stopped container has no health, whatever Docker kept")
+    func stoppedHealth() throws {
+        let line = #"{"HealthStatus":"unhealthy","ID":"1","Image":"x","Labels":"","Names":"db","State":"exited","Status":"Exited (0) 9 days ago"}"#
+        #expect(try #require(Container.parse(line)).health == nil)
+    }
+
     @Test("Health from the status of older Docker")
     func health() {
         #expect(Container.health(fromStatus: "Up 2 hours (unhealthy)") == "unhealthy")
@@ -249,5 +255,69 @@ struct LineReaderTests {
         var lines: [String] = []
         LineReader.read(pipe.fileHandleForReading) { lines.append($0) }
         #expect(lines == ["one", "two", "three"])
+    }
+}
+
+@Suite("Overview")
+struct OverviewTests {
+    @Test("Host info from the server")
+    func hostInfo() {
+        let info = HostInfo.parse("@host HomeServer\n@cores 8\n@version 7.3.4\n@disk /mnt/user 2000 500\n@disk /mnt/cache 100 75\n@disk /mnt/cache 100 75\n")
+        #expect(info.hostname == "HomeServer")
+        #expect(info.subtitle == "Unraid 7.3.4 · 8 cores")
+        #expect(info.disks.map(\.title) == ["Array", "Cache"])
+        #expect(info.disks[1].fraction == 0.75)
+    }
+
+    @Test("CPU from the change between two readings, memory used from available")
+    func load() {
+        var load = HostLoad()
+        load.read("@cpu cpu 100 0 100 800 0 0 0 0 0 0")
+        #expect(load.cpu.isEmpty)
+        load.read("@cpu cpu 150 0 150 900 0 0 0 0 0 0")   // busy +100 of total +200
+        #expect(load.cpu == [50])
+        load.read("@mem 1000 250")
+        #expect(load.memoryTotal == 1_024_000)
+        #expect(load.memoryUsed == [768_000])
+        load.read("@load 0.52 0.61 0.70 1/800 1234")
+        #expect(load.load == [0.52, 0.61, 0.70])
+        load.read("@up 3600.5 7000")
+        #expect(load.uptime == 3600.5)
+    }
+
+    @Test("Problems per container, confirmed by the level detection")
+    func problems() {
+        let output = """
+        @@@ tautulli
+        2026-11-11T17:05:25.397643210Z 2026-11-11 17:05:25 - ERROR :: CP Server : Failed to access uri
+        2026-11-11T17:05:25.398025610Z 2026-11-11 17:05:25 - WARNING :: CP Server : Unable to parse XML
+        2026-11-11T17:06:25.398025610Z 2026-11-11 17:06:25 - INFO :: Thread : No errors found
+        @@@ quiet
+        """
+        let summary = ProblemSummary.parse(output)
+        #expect(summary["tautulli"]?.errors == 1)
+        #expect(summary["tautulli"]?.warnings == 1)
+        #expect(summary["tautulli"]?.latest?.message.hasPrefix("CP Server : Unable") == true)
+        #expect(summary["quiet"] == ProblemSummary())
+    }
+
+    @Test("Icons: label, then template, then Porthole's list by name and longest prefix")
+    func icons() {
+        let output = "crowdsec\thttps://x/crowdsec.png\thttp://[IP]:[PORT:8080]\nempty\t\t\n@@porthole-icons\n"
+            + #"{"containers":{"LocalProxy":"https://x/nginx.png"},"prefixes":{"azeroth-":"/boot/a.png","azeroth-survivors-cmangos-":"/boot/c.png"}}"#
+        let icons = ServerIcons.parse(output)
+        func icon(_ name: String, labels: [String: String] = [:]) -> IconSource? {
+            icons.icon(for: Container(id: name, name: name, image: "", state: "running", status: "", labels: labels))
+        }
+        #expect(icon("x", labels: ["net.unraid.docker.icon": "https://x/label.png"]) == .url(URL(string: "https://x/label.png")!))
+        #expect(icon("crowdsec") == .url(URL(string: "https://x/crowdsec.png")!))
+        #expect(icon("LocalProxy") == .url(URL(string: "https://x/nginx.png")!))
+        #expect(icon("azeroth-survivors-cmangos-mangosd-1") == .serverFile("/boot/c.png"))
+        #expect(icon("azeroth-other") == .serverFile("/boot/a.png"))
+        #expect(icon("nothing") == nil)
+        let both = Container(id: "c", name: "crowdsec", image: "", state: "running", status: "", labels: ["net.unraid.docker.icon": "https://x/dead.png"])
+        #expect(icons.icons(for: both) == [.url(URL(string: "https://x/dead.png")!), .url(URL(string: "https://x/crowdsec.png")!)])
+        let web = icons.withTemplateWebUI(Container(id: "c", name: "crowdsec", image: "", state: "running", status: ""))
+        #expect(web.webUI(host: "h")?.absoluteString == "http://h:8080")
     }
 }

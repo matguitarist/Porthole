@@ -11,7 +11,7 @@ import SwiftUI
 /// Add APP_ACCENT=<id> to see the pages in another accent.
 enum Snapshot {
     /// Sample containers that show each state: warnings, an unhealthy one, a crashed one.
-    static let pages = ["uptime-kuma", "seerr", "tautulli", "mangosd"]
+    static let pages = ["overview", "uptime-kuma", "seerr", "tautulli", "mangosd"]
 
     static func runIfRequested(model: AppModel, openSettings: OpenSettingsAction) {
         let env = ProcessInfo.processInfo.environment
@@ -36,7 +36,7 @@ enum Snapshot {
             for mode in ["light", "dark"] {
                 NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
                 for page in pages where only?.contains(page) ?? true {
-                    model.selection = page
+                    if page == "overview" { model.page = .overview } else { model.selection = page }
                     try? await Task.sleep(for: .seconds(1.2))
                     capture(to: "\(dir)/\(page)-\(mode).png")
                 }

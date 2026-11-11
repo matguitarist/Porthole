@@ -44,22 +44,27 @@ struct ContainerSidebar: View {
 
     var body: some View {
         @Bindable var model = model
-        List(selection: $model.selection) {
+        List(selection: $model.page) {
+            if model.connection == .connected || !model.containers.isEmpty {
+                Label("Overview", systemImage: "gauge.with.dots.needle.33percent")
+                    .badge(model.containersWithProblems.filter { $0.summary.errors > 0 }.count)
+                    .tag(Page.overview)
+            }
             if !model.running.isEmpty {
                 Section("Running") {
-                    ForEach(model.running) { ContainerRow(container: $0).tag($0.name) }
+                    ForEach(model.running) { ContainerRow(container: $0).tag(Page.container($0.name)) }
                 }
             }
             if !model.stopped.isEmpty {
                 Section("Stopped") {
-                    ForEach(model.stopped) { ContainerRow(container: $0).tag($0.name) }
+                    ForEach(model.stopped) { ContainerRow(container: $0).tag(Page.container($0.name)) }
                 }
             }
         }
         .searchable(text: $model.search, placement: .sidebar, prompt: "Filter")
         .overlay { overlay }
-        .contextMenu(forSelectionType: String.self) { names in
-            if let name = names.first, let container = model.containers.first(where: { $0.name == name }) {
+        .contextMenu(forSelectionType: Page.self) { pages in
+            if case .container(let name) = pages.first, let container = model.containers.first(where: { $0.name == name }) {
                 ContainerActions(container: container)
             }
         }
@@ -117,23 +122,21 @@ struct ContainerRow: View {
     }
 }
 
-/// The container's own icon from its Unraid template, or a box.
+/// The container's own icon (its label, Unraid template, or Porthole's list on the server), or a box.
 struct ContainerIcon: View {
+    @Environment(AppModel.self) private var model
     let container: Container
+    var size: CGFloat = 24
 
     var body: some View {
         Group {
-            if let url = container.iconURL, url.scheme?.hasPrefix("http") == true {
-                AsyncImage(url: url) { image in
-                    image.resizable().scaledToFit()
-                } placeholder: {
-                    placeholder
-                }
+            if let image = model.iconImage(for: container) {
+                Image(nsImage: image).resizable().scaledToFit()
             } else {
                 placeholder
             }
         }
-        .frame(width: 24, height: 24)
+        .frame(width: size, height: size)
         .clipShape(.rect(cornerRadius: Space.xs))
         .opacity(container.isRunning ? 1 : 0.5)
     }
@@ -199,7 +202,9 @@ struct ContainerDetail: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        if let name = model.selection {
+        if model.page == .overview {
+            OverviewView()
+        } else if let name = model.selection {
             let log = model.log(for: name)
             LogViewer(model: log.viewer, options: options(for: name))
                 .id(name)

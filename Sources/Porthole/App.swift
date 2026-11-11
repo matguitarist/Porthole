@@ -30,6 +30,16 @@ struct PortholeApp: App {
             SidebarCommands()
             ToolbarCommands()
             CommandGroup(replacing: .newItem) {}
+            CommandGroup(before: .sidebar) {
+                Button("Overview", systemImage: "gauge.with.dots.needle.33percent") { model.page = .overview }
+                    .keyboardShortcut("0")
+                Button("Scan Logs for Problems", systemImage: "exclamationmark.magnifyingglass") {
+                    Task { await model.scanProblems() }
+                }
+                .keyboardShortcut("p", modifiers: [.command, .shift])
+                .disabled(model.scanningProblems)
+                Divider()
+            }
             CommandMenu("Container") {
                 Button("Start", systemImage: "play") { model.request(.start) }
                     .keyboardShortcut("s", modifiers: [.command, .option])

@@ -90,6 +90,51 @@ public actor DemoDocker: DockerClient {
         }
     }
 
+    public func serverIcons() async throws -> ServerIcons { ServerIcons() }
+
+    public func serverFile(_ path: String) async throws -> Data {
+        throw DockerError.command(status: 1, message: "No files in the sample data.")
+    }
+
+    public func hostInfo() async throws -> HostInfo {
+        HostInfo(hostname: "HomeServer", version: "7.3.4", cores: 8, disks: [
+            .init(mount: "/mnt/user", size: 2_000e9, used: 1_310e9),
+            .init(mount: "/mnt/cache", size: 500e9, used: 321e9),
+            .init(mount: "/boot", size: 31e9, used: 2.7e9),
+        ])
+    }
+
+    public nonisolated func hostLoad() -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            let task = Task {
+                var round = 0
+                var busy = 1_000.0, total = 10_000.0
+                while !Task.isCancelled {
+                    let share = 0.12 + 0.08 * sin(Double(round) / 4)
+                    busy += 800 * share
+                    total += 800
+                    continuation.yield("@cpu cpu \(Int(busy)) 0 0 \(Int(total - busy)) 0 0 0 0")
+                    continuation.yield("@mem 32768000 \(Int(19_000_000 + 600_000 * sin(Double(round) / 6)))")
+                    continuation.yield("@load 1.12 0.98 0.87 2/812 1234")
+                    continuation.yield("@up 523800")
+                    continuation.yield("@end")
+                    round += 1
+                    try? await Task.sleep(for: round < 60 ? .milliseconds(10) : .seconds(2))
+                }
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    public func problems() async throws -> [String: ProblemSummary] {
+        var output = ""
+        for container in list {
+            output += "@@@ \(container.name)\n"
+            output += Self.sampleLines(for: container.name, now: now).joined(separator: "\n") + "\n"
+        }
+        return ProblemSummary.parse(output)
+    }
+
     /// Lines in the formats real containers write, with Docker's timestamps.
     static func sampleLines(for name: String, now: Date) -> [String] {
         let texts: [String]

@@ -1,4 +1,5 @@
 import AppKit
+import LogKit
 import PortholeKit
 
 /// Self-test for agents: runs the app's real functions on a test store,
@@ -26,7 +27,19 @@ enum SelfTest {
             // ContentView connects on its own; wait for the sample containers.
             for _ in 0..<50 where model.connection != .connected { try? await Task.sleep(for: .milliseconds(100)) }
             check("connects and lists the sample containers", model.containers.count == 7, "\(model.containers.count)")
-            check("picks a running container first", model.selected?.isRunning == true)
+            check("opens on the overview", model.page == .overview)
+            for _ in 0..<50 where model.problemsScanned == nil || model.hostLoad.cpu.isEmpty || model.hostInfo == nil { try? await Task.sleep(for: .milliseconds(100)) }
+            check("the overview shows the server's load", !model.hostLoad.cpu.isEmpty && model.hostLoad.memoryTotal > 0)
+            check("and its disks", model.hostInfo?.disks.count == 3)
+            check("scans every container's log for problems", model.problems.count == 7)
+            check("lists containers with errors first", model.containersWithProblems.first?.summary.errors ?? 0 > 0)
+            check("lists containers that need a look", Set(model.containersNeedingAttention.map(\.name)) == ["tautulli", "mangosd"])
+            model.open("tautulli", problemsOnly: true)
+            check("a problem row opens the container's warnings and errors",
+                  model.selection == "tautulli" && model.log(for: "tautulli").viewer.filter.levels == [.warning, .error, .critical])
+            model.open("tautulli")
+            check("a container row opens its whole log", model.log(for: "tautulli").viewer.filter.levels == model.log(for: "tautulli").viewer.defaultFilter.levels)
+            model.page = .overview
 
             model.selection = "tautulli"
             let log = model.log(for: "tautulli")

@@ -56,12 +56,15 @@ public struct Container: Identifiable, Hashable, Sendable {
     public static func parse(_ line: some StringProtocol) -> Container? {
         guard let object = try? JSONSerialization.jsonObject(with: Data(line.utf8)) as? [String: Any],
               let id = object["ID"] as? String, let name = object["Names"] as? String else { return nil }
-        let health = (object["HealthStatus"] as? String).flatMap { $0.isEmpty || $0 == "none" ? nil : $0 }
+        let state = object["State"] as? String ?? ""
+        // A stopped container keeps its last health status; it means nothing until it runs again.
+        let running = state == "running" || state == "restarting"
+        let health = running ? (object["HealthStatus"] as? String).flatMap { $0.isEmpty || $0 == "none" ? nil : $0 } : nil
         return Container(id: id, name: name.split(separator: ",").first.map(String.init) ?? name,
                          image: object["Image"] as? String ?? "",
-                         state: object["State"] as? String ?? "",
+                         state: state,
                          status: object["Status"] as? String ?? "",
-                         health: health ?? Self.health(fromStatus: object["Status"] as? String ?? ""),
+                         health: running ? health ?? Self.health(fromStatus: object["Status"] as? String ?? "") : nil,
                          ports: object["Ports"] as? String ?? "",
                          labels: Self.labels(object["Labels"] as? String ?? ""))
     }

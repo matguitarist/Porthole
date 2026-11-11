@@ -34,6 +34,15 @@ public protocol DockerClient: Sendable {
     /// Raw `docker stats` JSON lines, a round for all running containers every two seconds.
     func stats() -> AsyncThrowingStream<String, Error>
     func perform(_ action: ContainerAction, on name: String) async throws
+    /// Icons from Unraid's templates and Porthole's list on the server.
+    func serverIcons() async throws -> ServerIcons
+    /// A file on the server (an icon).
+    func serverFile(_ path: String) async throws -> Data
+    func hostInfo() async throws -> HostInfo
+    /// HostLoad lines every two seconds.
+    func hostLoad() -> AsyncThrowingStream<String, Error>
+    /// Warnings and errors per container over the last day.
+    func problems() async throws -> [String: ProblemSummary]
 }
 
 /// Docker on another machine, through the `docker` command over SSH. All
@@ -134,6 +143,31 @@ public actor SSHDocker: DockerClient {
 
     public func perform(_ action: ContainerAction, on name: String) async throws {
         _ = try await command("docker \(action.rawValue) \(Self.quote(name))")
+    }
+
+    public func serverIcons() async throws -> ServerIcons {
+        ServerIcons.parse(try await command(ServerIcons.command))
+    }
+
+    public func serverFile(_ path: String) async throws -> Data {
+        let text = try await command("base64 < \(Self.quote(path))")
+        guard let data = Data(base64Encoded: text, options: .ignoreUnknownCharacters) else {
+            throw DockerError.command(status: 1, message: "Couldn't read \(path).")
+        }
+        return data
+    }
+
+    public func hostInfo() async throws -> HostInfo {
+        HostInfo.parse(try await command(HostInfo.command))
+    }
+
+    public nonisolated func hostLoad() -> AsyncThrowingStream<String, Error> {
+        stream(HostLoad.command)
+    }
+
+    public func problems() async throws -> [String: ProblemSummary] {
+        let output = try await command(ProblemSummary.command)
+        return await Task.detached { ProblemSummary.parse(output) }.value
     }
 
     /// A long-running remote command, line by line. Cancelling the stream ends the command.

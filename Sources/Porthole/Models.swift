@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import LogKitUI
 import PortholeKit
@@ -60,10 +61,8 @@ final class ContainerLog {
                     let since = newest.value
                     for try await raw in client.logs(name, tail: tail, since: since.map { $0.addingTimeInterval(-1) }) {
                         let line = LogLine.parse(Substring(raw))
-                        if let date = line.date {
-                            if let since, date <= since { continue }   // already shown
-                            newest.value = date
-                        }
+                        // Already shown (the reconnect's first second, or an old stream still finishing).
+                        if let date = line.date, !newest.advance(to: date) { continue }
                         store.post(line.level, line.message, source: line.source, date: line.date ?? Date(), detail: line.detail)
                     }
                 } catch {
@@ -99,10 +98,22 @@ final class ContainerLog {
 nonisolated final class NewestDate: @unchecked Sendable {
     private let lock = NSLock()
     private var date: Date?
-    var value: Date? {
-        get { lock.withLock { date } }
-        set { lock.withLock { date = newValue } }
+    var value: Date? { lock.withLock { date } }
+
+    /// Moves to `newer` and returns true, or false when it isn't newer.
+    func advance(to newer: Date) -> Bool {
+        lock.withLock {
+            if let date, newer <= date { return false }
+            date = newer
+            return true
+        }
     }
+}
+
+/// What the sidebar shows in the detail: the server's overview or one container.
+enum Page: Hashable {
+    case overview
+    case container(String)
 }
 
 /// App-wide state that menus, toolbars, and views share.
@@ -111,9 +122,29 @@ final class AppModel {
     private(set) var client: any DockerClient
     private(set) var containers: [Container] = []
     private(set) var connection = Connection.connecting
-    var selection: String? {
-        didSet { if selection != oldValue { selectionChanged(from: oldValue) } }
+    var page: Page? = .overview {
+        didSet { if page != oldValue { selectionChanged(from: oldValue.flatMap(Self.name)) } }
     }
+    /// The container shown, or nil on the overview.
+    var selection: String? {
+        get { page.flatMap(Self.name) }
+        set { page = newValue.map { .container($0) } }
+    }
+    private static func name(_ page: Page) -> String? {
+        if case .container(let name) = page { return name }
+        return nil
+    }
+
+    // The overview
+    private(set) var hostInfo: HostInfo?
+    private(set) var hostLoad = HostLoad()
+    private(set) var problems: [String: ProblemSummary] = [:]
+    private(set) var problemsScanned: Date?
+    private(set) var scanningProblems = false
+    // Icons
+    private(set) var serverIcons = ServerIcons()
+    private(set) var iconImages: [String: NSImage] = [:]
+    @ObservationIgnored private var iconRequests: Set<String> = []
     var search = ""
     private(set) var stats: [String: StatsHistory] = [:]
     /// A container whose Stop waits for confirmation.
@@ -175,11 +206,14 @@ final class AppModel {
             connection = .failed(error.localizedDescription)
             return
         }
-        if selection == nil || !containers.contains(where: { $0.name == selection }) {
-            selection = (containers.first(where: \.isRunning) ?? containers.first)?.name
+        if page == nil || (selection != nil && !containers.contains(where: { $0.name == selection })) {
+            page = .overview
         } else {
             selectionChanged(from: nil)
         }
+        watchers.append(Task { await loadServerDetails() })
+        watchers.append(Task { await watchHostLoad() })
+        watchers.append(Task { await scanProblemsRegularly() })
         watchers.append(Task { await watchEvents() })
         watchers.append(Task { await watchStats() })
         watchers.append(Task { await refreshInspectRegularly() })
@@ -191,13 +225,121 @@ final class AppModel {
         for log in logs.values { log.stop() }
         logs = [:]
         stats = [:]
+        hostLoad = HostLoad()
+        hostLoadPending = HostLoad()
+        hostInfo = nil
+        problems = [:]
+        iconImages = [:]
+        iconRequests = []
         client = Self.makeClient()
         Task { await connect() }
     }
 
     private func loadContainers() async throws {
         let list = try await client.containers()
-        containers = list.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        containers = list.map(serverIcons.withTemplateWebUI)
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
+    // MARK: Overview
+
+    private func loadServerDetails() async {
+        if let icons = try? await client.serverIcons() {
+            serverIcons = icons
+            containers = containers.map(icons.withTemplateWebUI)
+        }
+        while !Task.isCancelled {
+            if let info = try? await client.hostInfo() { hostInfo = info }
+            try? await Task.sleep(for: .seconds(60))
+        }
+    }
+
+    private func watchHostLoad() async {
+        while !Task.isCancelled {
+            do {
+                for try await line in client.hostLoad() {
+                    hostLoadPending.read(line)
+                    // The view updates once per reading, at its end.
+                    if line == "@end" { hostLoad = hostLoadPending }
+                }
+            } catch {}
+            try? await Task.sleep(for: .seconds(5))
+        }
+    }
+    @ObservationIgnored private var hostLoadPending = HostLoad()
+
+    private func scanProblemsRegularly() async {
+        while !Task.isCancelled {
+            await scanProblems()
+            try? await Task.sleep(for: .seconds(300))
+        }
+    }
+
+    /// Reads the last day's warnings and errors of every container.
+    func scanProblems() async {
+        guard !scanningProblems else { return }
+        scanningProblems = true
+        defer { scanningProblems = false }
+        if let found = try? await client.problems() {
+            problems = found
+            problemsScanned = Date()
+        }
+    }
+
+    /// Containers with problems, most errors first.
+    var containersWithProblems: [(container: Container, summary: ProblemSummary)] {
+        containers.compactMap { container in
+            guard let summary = problems[container.name], summary.total > 0 else { return nil }
+            return (container, summary)
+        }
+        .sorted { ($0.summary.errors, $0.summary.warnings, $1.container.name) > ($1.summary.errors, $1.summary.warnings, $0.container.name) }
+    }
+
+    /// Containers that need a look: unhealthy, restarting, or stopped by a crash.
+    var containersNeedingAttention: [Container] {
+        containers.filter { container in
+            container.health == "unhealthy" || container.state == "restarting"
+                || (!container.isRunning && (container.exitCode.map { $0 != 0 && $0 != 143 } ?? false))
+        }
+    }
+
+    /// Opens a container's log showing only its problems (or all of it).
+    func open(_ name: String, problemsOnly: Bool = false) {
+        selection = name
+        let viewer = log(for: name).viewer
+        viewer.filter.levels = problemsOnly ? [.warning, .error, .critical] : viewer.defaultFilter.levels
+    }
+
+    // MARK: Icons
+
+    /// The first of the container's icon sources that loaded.
+    func iconImage(for container: Container) -> NSImage? {
+        for source in serverIcons.icons(for: container) {
+            if let image = iconImage(source) { return image }
+        }
+        return nil
+    }
+
+    /// An icon, loaded once: from the web, or from the server over SSH.
+    /// NSImage reads PNG, ICO and SVG (Uptime Kuma's), which AsyncImage can't.
+    private func iconImage(_ source: IconSource) -> NSImage? {
+        let key: String
+        switch source {
+        case .url(let url): key = url.absoluteString
+        case .serverFile(let path): key = path
+        }
+        if let image = iconImages[key] { return image }
+        guard !iconRequests.contains(key) else { return nil }
+        iconRequests.insert(key)
+        Task {
+            let data: Data?
+            switch source {
+            case .url(let url): data = try? await URLSession.shared.data(from: url).0
+            case .serverFile(let path): data = try? await client.serverFile(path)
+            }
+            if let data, let image = NSImage(data: data) { iconImages[key] = image }
+        }
+        return nil
     }
 
     private func watchEvents() async {
