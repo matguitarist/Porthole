@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<Container version="2">
+  <Name>porthole-agent</Name>
+  <Repository>porthole-agent:latest</Repository>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Overview>Porthole's agent: this server's containers and logs on a web page, for when you're away from the Mac. Read only unless PORTHOLE_ACTIONS is 1.</Overview>
+  <Category>Tools: Status:Stable</Category>
+  <WebUI>http://[IP]:[PORT:7080]/</WebUI>
+  <Icon>https://cdn.jsdelivr.net/gh/selfhst/icons/png/docker.png</Icon>
+  <Config Name="Web page" Target="7080" Default="7080" Mode="tcp" Type="Port" Display="always" Required="true">7080</Config>
+  <Config Name="Docker socket" Target="/var/run/docker.sock" Default="/var/run/docker.sock" Mode="rw" Type="Path" Display="advanced" Required="true">/var/run/docker.sock</Config>
+  <Config Name="Host /proc (server load)" Target="/host/proc" Default="/proc" Mode="ro" Type="Path" Display="advanced" Required="true">/proc</Config>
+  <Config Name="Allow start, stop and restart" Target="PORTHOLE_ACTIONS" Default="0" Type="Variable" Display="always" Required="false">0</Config>
+  <Config Name="Token (optional)" Target="PORTHOLE_TOKEN" Default="" Type="Variable" Display="always" Required="false" Mask="true"></Config>
+</Container>
