@@ -22,6 +22,9 @@ public struct LogLine: Equatable, Sendable {
         self.detail = detail
     }
 
+    /// Between a container's name and its line in a stack's merged log.
+    public static let mergedSeparator = "\u{1F}"
+
     /// Reads a raw line from `docker logs -t`: "2026-11-11T14:03:11.998185856Z <text>".
     public static func parse(_ raw: Substring) -> LogLine {
         var text = raw

@@ -11,7 +11,7 @@ import SwiftUI
 /// Add APP_ACCENT=<id> to see the pages in another accent.
 enum Snapshot {
     /// Sample containers that show each state: warnings, an unhealthy one, a crashed one.
-    static let pages = ["overview", "uptime-kuma", "seerr", "tautulli", "mangosd"]
+    static let pages = ["overview", "uptime-kuma", "seerr", "tautulli", "mangosd", "stack-media"]
 
     static func runIfRequested(model: AppModel, openSettings: OpenSettingsAction) {
         let env = ProcessInfo.processInfo.environment
@@ -36,7 +36,9 @@ enum Snapshot {
             for mode in ["light", "dark"] {
                 NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
                 for page in pages where only?.contains(page) ?? true {
-                    if page == "overview" { model.page = .overview } else { model.selection = page }
+                    if page == "overview" { model.page = .overview }
+                    else if page.hasPrefix("stack-") { model.page = .stack(String(page.dropFirst(6))) }
+                    else { model.selection = page }
                     try? await Task.sleep(for: .seconds(1.2))
                     capture(to: "\(dir)/\(page)-\(mode).png")
                 }
@@ -50,10 +52,24 @@ enum Snapshot {
                     for tab in SettingsTab.allCases {
                         model.settingsTab = tab
                         try? await Task.sleep(for: .seconds(0.8))
-                        let settings = NSApp.windows.first { $0.isVisible && $0 !== main && !$0.isSheet }
+                        let settings = NSApp.windows.first { $0.isVisible && $0 !== main && !$0.isSheet && $0.styleMask.contains(.titled) }
                         capture(to: "\(dir)/settings-\(tab.rawValue)-\(mode).png", window: settings)
                     }
                 }
+            }
+            if only == nil || only?.contains("menubar") == true {
+                // The menu bar panel, in a plain window of its own.
+                let panel = NSWindow(contentRect: NSRect(x: 200, y: 200, width: 340, height: 400),
+                                     styleMask: [.titled], backing: .buffered, defer: false)
+                panel.title = "Menu Bar"
+                panel.contentView = NSHostingView(rootView: MenuBarPanel().environment(model).themed())
+                panel.setContentSize(panel.contentView?.fittingSize ?? .zero)
+                for mode in ["light", "dark"] {
+                    NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                    try? await Task.sleep(for: .seconds(0.8))
+                    capture(to: "\(dir)/menubar-\(mode).png", window: panel)
+                }
+                panel.close()
             }
             print("SNAPSHOT done \(dir)")
             // An open sheet refuses terminate, and the run would wait forever.

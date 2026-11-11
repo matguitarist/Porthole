@@ -76,6 +76,45 @@ enum SelfTest {
                   model.webUI(for: model.containers.first { $0.name == "seerr" })?.absoluteString == "http://192.168.40.210:5055"
                   || model.webUI(for: model.containers.first { $0.name == "seerr" })?.port == 5055)
 
+            // Stacks: a compose project's containers share one merged log.
+            check("finds compose stacks", model.stacks["media"]?.map(\.name).sorted() == ["seerr", "tautulli"])
+            model.page = .stack("media")
+            let stack = model.stackLog("media")
+            for _ in 0..<50 where Set(stack.store.entries.map(\.source)).count < 2 { try? await Task.sleep(for: .milliseconds(100)) }
+            check("a stack's log merges its containers, with each line's container as source",
+                  Set(stack.store.entries.map(\.source)) == ["seerr", "tautulli"])
+
+            // Events from the last day, newest first.
+            check("lists the last day's events, newest first",
+                  model.recentEvents.count == 4 && model.recentEvents.first?.name == "tautulli" && model.recentEvents.first?.action == "start")
+
+            // Ignore rules: known noise stops counting as a problem.
+            model.page = .overview
+            await model.scanProblems()
+            let before = model.problems["uptime-kuma"]?.warnings ?? 0
+            let rule = IgnoreRules.Rule(container: "uptime-kuma", text: "Monitor #6 'qBittorrent': Failing")
+            model.ignore(rule)
+            await model.scanProblems()
+            check("an ignore rule stops counting its messages", before > 0 && (model.problems["uptime-kuma"]?.warnings ?? 0) < before,
+                  "\(before) → \(model.problems["uptime-kuma"]?.warnings ?? -1)")
+            model.removeIgnore(rule)
+            await model.scanProblems()
+            check("removing it counts them again", model.problems["uptime-kuma"]?.warnings == before)
+
+            // Clearing logs asks first, then empties them on the server.
+            model.requestClearLogs()
+            check("Clear All Logs asks first", model.confirmClear?.names.count == model.containers.count)
+            model.confirmClear = nil
+            await model.clearLogs(["tautulli"])
+            check("clearing a log removes its problems", model.problems["tautulli"]?.total == 0 && (model.problems["seerr"]?.total ?? 0) > 0)
+
+            // Alerts: a crash notifies, the same one again stays quiet for a while.
+            let sentBefore = model.notifier.sent.count
+            model.notifier.event(DockerEvent(action: "die", name: "seerr", date: Date(), exitCode: 1), recent: [])
+            model.notifier.event(DockerEvent(action: "die", name: "seerr", date: Date(), exitCode: 1), recent: [])
+            check("a crash sends one alert, not two", model.notifier.sent.count == sentBefore + 1
+                  && model.notifier.sent.last?.title == "seerr crashed")
+
             print(failures == 0 ? "SELFTEST PASS \(count) checks" : "SELFTEST FAIL \(failures) of \(count) checks")
             finish(code: failures == 0 ? 0 : 1)
         }

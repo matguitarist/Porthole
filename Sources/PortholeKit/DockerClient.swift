@@ -27,8 +27,14 @@ public enum DockerError: LocalizedError, Equatable {
 public protocol DockerClient: Sendable {
     func containers() async throws -> [Container]
     func inspect(_ name: String) async throws -> ContainerState
-    /// Raw `docker logs -f -t` lines, newest `tail` first, or those after `since`.
-    func logs(_ name: String, tail: Int, since: Date?) -> AsyncThrowingStream<String, Error>
+    /// Raw `docker logs -f -t` lines, the last `tail`, or those after `since`.
+    /// With several containers (a compose stack), each line starts with the
+    /// container's name and `LogLine.mergedSeparator`.
+    func logs(_ names: [String], tail: Int, since: Date?) -> AsyncThrowingStream<String, Error>
+    /// Empties the containers' log files on the server. Can't be undone.
+    func clearLogs(_ names: [String]) async throws
+    /// Notable events of the last `hours` (starts, crashes, health).
+    func recentEvents(hours: Int) async throws -> [DockerEvent]
     /// Raw `docker events` JSON lines for containers.
     func events() -> AsyncThrowingStream<String, Error>
     /// Raw `docker stats` JSON lines, a round for all running containers every two seconds.
@@ -41,8 +47,8 @@ public protocol DockerClient: Sendable {
     func hostInfo() async throws -> HostInfo
     /// HostLoad lines every two seconds.
     func hostLoad() -> AsyncThrowingStream<String, Error>
-    /// Warnings and errors per container over the last day.
-    func problems() async throws -> [String: ProblemSummary]
+    /// Warnings and errors per container over the last day, without ignored messages.
+    func problems(ignoring rules: IgnoreRules) async throws -> [String: ProblemSummary]
 }
 
 /// Docker on another machine, through the `docker` command over SSH. All
@@ -128,9 +134,43 @@ public actor SSHDocker: DockerClient {
         return state
     }
 
-    public nonisolated func logs(_ name: String, tail: Int, since: Date?) -> AsyncThrowingStream<String, Error> {
+    public nonisolated func logs(_ names: [String], tail: Int, since: Date?) -> AsyncThrowingStream<String, Error> {
         let from = since.map { "--since \(DockerTime.string($0))" } ?? "--tail \(tail)"
-        return stream("docker logs -f -t \(from) \(Self.quote(name)) 2>&1")
+        if names.count == 1 {
+            return stream("docker logs -f -t \(from) \(Self.quote(names[0])) 2>&1")
+        }
+        return stream(Self.mergedCommand(names, from: from))
+    }
+
+    /// One SSH channel for a whole stack, each line prefixed with its container's
+    /// name. The earlier lines come first, merged in time order (Docker's
+    /// timestamps sort as text); then every container follows from the moment
+    /// the command started. The few lines in both are dropped by date on this side.
+    static func mergedCommand(_ names: [String], from: String) -> String {
+        func prefixed(_ name: String, _ logs: String, unbuffered: Bool) -> String {
+            "docker logs -t \(logs) \(quote(name)) 2>&1 | sed \(unbuffered ? "-u " : "")\"s/^/\(name)\\x1f/\""
+        }
+        let history = names.map { prefixed($0, from, unbuffered: false) }.joined(separator: "; ")
+        let follow = names.map { "(\(prefixed($0, "-f --since $t", unbuffered: true))) &" }.joined(separator: " ")
+        return "t=$(date +%s); { \(history); } | sort -s -t \"$(printf '\\037')\" -k2,2; \(follow) wait"
+    }
+
+    /// Sends a Gotify message from the server (Gotify is on its network).
+    /// `url` as the server sees it: "http://127.0.0.1:8070".
+    public func gotify(url: String, token: String, title: String, message: String, priority: Int = 6) async throws {
+        let endpoint = url.trimmingCharacters(in: CharacterSet(charactersIn: "/ ")) + "/message"
+        _ = try await command("curl -fsS -m 10 -X POST \(Self.quote(endpoint)) -H \(Self.quote("X-Gotify-Key: " + token)) --form-string \(Self.quote("title=" + title)) --form-string \(Self.quote("message=" + message)) -F priority=\(priority) >/dev/null")
+    }
+
+    public func clearLogs(_ names: [String]) async throws {
+        let quoted = names.map(Self.quote).joined(separator: " ")
+        _ = try await command("for c in \(quoted); do f=$(docker inspect -f '{{.LogPath}}' \"$c\") && [ -f \"$f\" ] && truncate -s 0 \"$f\"; done")
+    }
+
+    public func recentEvents(hours: Int) async throws -> [DockerEvent] {
+        let now = Int(Date().timeIntervalSince1970)
+        let output = try await command("docker events --since \(now - hours * 3600) --until \(now) --filter type=container --format '{{json .}}'")
+        return output.split(separator: "\n").compactMap(DockerEvent.parse).filter(\.isNotable)
     }
 
     public nonisolated func events() -> AsyncThrowingStream<String, Error> {
@@ -165,9 +205,9 @@ public actor SSHDocker: DockerClient {
         stream(HostLoad.command)
     }
 
-    public func problems() async throws -> [String: ProblemSummary] {
+    public func problems(ignoring rules: IgnoreRules) async throws -> [String: ProblemSummary] {
         let output = try await command(ProblemSummary.command)
-        return await Task.detached { ProblemSummary.parse(output) }.value
+        return await Task.detached { ProblemSummary.parse(output, ignoring: rules) }.value
     }
 
     /// A long-running remote command, line by line. Cancelling the stream ends the command.

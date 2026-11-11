@@ -1,6 +1,7 @@
 import AppKit
 import PortholeKit
 import SwiftUI
+import UserNotifications
 
 // Porthole
 //   Porthole                      the app, connected to the server in Settings
@@ -62,6 +63,8 @@ struct PortholeApp: App {
             }
         }
 
+        StatusScene(model: model)
+
         Settings {
             SettingsView()
                 .environment(model)
@@ -71,14 +74,36 @@ struct PortholeApp: App {
     }
 }
 
-final class AppDelegate: NSObject, NSApplicationDelegate {
+final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCenterDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Started from a terminal, the process is not a foreground app yet.
         NSApp.setActivationPolicy(.regular)
         NSApp.activate()
+        if !Store.isOverridden { UNUserNotificationCenter.current().delegate = self }
     }
 
-    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { true }
+    /// With the menu bar icon, Porthole keeps watching after the window closes.
+    func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
+        Store.isOverridden || !MenuBarStatus.isShown
+    }
+
+    /// The Dock icon reopens the window.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool { true }
+
+    /// Alerts show even while Porthole is in front.
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async
+        -> UNNotificationPresentationOptions { [.banner, .sound] }
+
+    /// A click on an alert opens that container's warnings and errors.
+    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+        let name = response.notification.request.content.userInfo["container"] as? String
+        await MainActor.run {
+            guard let model = AppModel.current, let name else { return }
+            model.open(name, problemsOnly: true)
+            NSApp.activate()
+            NSApp.windows.first { $0.identifier?.rawValue.hasPrefix("main") == true }?.makeKeyAndOrderFront(nil)
+        }
+    }
 
     /// The self-test's result becomes the exit code, after a normal quit.
     func applicationWillTerminate(_ notification: Notification) {
@@ -93,5 +118,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 enum Store {
     static var isOverridden: Bool {
         !(ProcessInfo.processInfo.environment["APP_STORE"] ?? "").isEmpty
+    }
+}
+
+/// The menu bar icon, in its own scene so the app's menus updating don't rebuild it.
+struct StatusScene: Scene {
+    @Bindable var model: AppModel
+
+    var body: some Scene {
+        // Bound to the model: an @AppStorage binding here makes SwiftUI update forever.
+        MenuBarExtra(isInserted: $model.showInMenuBar) {
+            MenuBarPanel()
+                .environment(model)
+                .themed()
+        } label: {
+            Image(systemName: MenuBarStatus.symbol(model))
+        }
+        .menuBarExtraStyle(.window)
     }
 }

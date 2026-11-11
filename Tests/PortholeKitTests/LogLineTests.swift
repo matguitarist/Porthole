@@ -321,3 +321,50 @@ struct OverviewTests {
         #expect(web.webUI(host: "h")?.absoluteString == "http://h:8080")
     }
 }
+
+@Suite("Ignore rules, events, stacks")
+struct IgnoreAndEventTests {
+    @Test func stackLogsMergeEarlierLinesInTimeOrderThenFollow() {
+        let command = SSHDocker.mergedCommand(["db", "app"], from: "--tail 100")
+        // Earlier lines: both containers, sorted on the timestamp after the separator.
+        #expect(command.hasPrefix("t=$(date +%s); { docker logs -t --tail 100 'db' 2>&1 | sed \"s/^/db\\x1f/\"; docker logs -t --tail 100 'app'"))
+        #expect(command.contains("| sort -s -t \"$(printf '\\037')\" -k2,2;"))
+        // Then each follows from the start, unbuffered, in parallel.
+        #expect(command.contains("(docker logs -t -f --since $t 'app' 2>&1 | sed -u \"s/^/app\\x1f/\") &"))
+        #expect(command.hasSuffix(" wait"))
+    }
+
+    @Test("A rule for one container or all, ignoring case")
+    func rules() {
+        let rules = IgnoreRules(rules: [.init(container: "uptime-kuma", text: "Monitor #6 'qBittorrent'"),
+                                        .init(container: nil, text: "context canceled")])
+        #expect(rules.ignores("monitor #6 'qbittorrent': Failing: connect", in: "uptime-kuma"))
+        #expect(!rules.ignores("Monitor #6 'qBittorrent': Failing", in: "other"))
+        #expect(rules.ignores("rpc: context canceled", in: "anything"))
+    }
+
+    @Test("Suggested text stops before the parts that change")
+    func suggestion() {
+        #expect(IgnoreRules.suggestedText(for: "Unable to get queue from Sonarr server: Sonarr") == "Unable to get queue from Sonarr server: Sonarr")
+        #expect(IgnoreRules.suggestedText(for: "Failed to sync (path=aria.png error=x)") == "Failed to sync")
+        #expect(IgnoreRules.suggestedText(for: "Monitor #6 'qBittorrent': Failing") == "Monitor #6 'qBittorrent': Failing")
+    }
+
+    @Test("Ignored lines don't count as problems")
+    func ignoredProblems() {
+        let output = "@@@ kuma\n2026-11-11T19:42:08Z [MONITOR] WARN: Monitor #6 'qBittorrent': Failing\n2026-11-11T19:43:08Z [MONITOR] ERROR: Monitor #9 down\n"
+        let summary = ProblemSummary.parse(output, ignoring: IgnoreRules(rules: [.init(container: "kuma", text: "Monitor #6")]))
+        #expect(summary["kuma"]?.warnings == 0)
+        #expect(summary["kuma"]?.errors == 1)
+    }
+
+    @Test("Events: crashes are problems, normal stops aren't")
+    func events() throws {
+        let die = try #require(DockerEvent.parse(#"{"Type":"container","Action":"die","Actor":{"Attributes":{"exitCode":"137","name":"mangosd"}},"time":1}"#))
+        #expect(die.exitCode == 137 && die.isProblem && die.summary == "Stopped with exit code 137")
+        let stop = try #require(DockerEvent.parse(#"{"Type":"container","Action":"die","Actor":{"Attributes":{"exitCode":"143","name":"x"}},"time":1}"#))
+        #expect(!stop.isProblem && stop.summary == "Stopped")
+        #expect(DockerEvent(action: "health_status: unhealthy", name: "x", date: .now).isProblem)
+        #expect(!DockerEvent(action: "exec_start: sh", name: "x", date: .now).isNotable)
+    }
+}

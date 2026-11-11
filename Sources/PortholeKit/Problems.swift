@@ -29,7 +29,7 @@ public struct ProblemSummary: Sendable, Equatable {
     for c in $(docker ps -a --format '{{.Names}}'); do echo "@@@ $c"; docker logs -t --since \#(hours)h "$c" 2>&1 | grep -aiE 'warn|wrn|err|fatal|ftl|crit|panic|alert|exception|traceback|HTTP/[0-9.]+" [45][0-9][0-9]' | tail -n \#(maxLines); done
     """#
 
-    public static func parse(_ output: String) -> [String: ProblemSummary] {
+    public static func parse(_ output: String, ignoring rules: IgnoreRules = IgnoreRules()) -> [String: ProblemSummary] {
         var result: [String: ProblemSummary] = [:]
         var current: String?
         var lines = 0
@@ -48,7 +48,7 @@ public struct ProblemSummary: Sendable, Equatable {
             guard let current else { continue }
             lines += 1
             let line = LogLine.parse(raw)
-            guard line.level.isProblem else { continue }
+            guard line.level.isProblem, !rules.ignores(line.message, in: current) else { continue }
             if line.level >= .error { result[current]?.errors += 1 } else { result[current]?.warnings += 1 }
             result[current]?.latest = line
         }

@@ -8,18 +8,19 @@ public actor DemoDocker: DockerClient {
 
     public init(now: Date = Date()) {
         self.now = now
-        func labels(_ icon: String, web: String? = nil) -> [String: String] {
+        func labels(_ icon: String, web: String? = nil, project: String? = nil) -> [String: String] {
             var labels = ["net.unraid.docker.icon": "demo://\(icon)"]
             if let web { labels["net.unraid.docker.webui"] = web }
+            if let project { labels["com.docker.compose.project"] = project }
             return labels
         }
         list = [
             Container(id: "a1", name: "uptime-kuma", image: "louislam/uptime-kuma:2", state: "running", status: "Up 6 hours (healthy)",
                       health: "healthy", labels: labels("kuma", web: "http://[IP]:[PORT:3001]")),
             Container(id: "a2", name: "seerr", image: "seerr/seerr:latest", state: "running", status: "Up 6 hours",
-                      labels: labels("seerr", web: "http://[IP]:[PORT:5055]")),
+                      labels: labels("seerr", web: "http://[IP]:[PORT:5055]", project: "media")),
             Container(id: "a3", name: "tautulli", image: "linuxserver/tautulli", state: "running", status: "Up 2 hours (unhealthy)",
-                      health: "unhealthy", labels: labels("tautulli", web: "http://[IP]:[PORT:8181]")),
+                      health: "unhealthy", labels: labels("tautulli", web: "http://[IP]:[PORT:8181]", project: "media")),
             Container(id: "a4", name: "syncthing", image: "syncthing/syncthing", state: "running", status: "Up 3 days"),
             Container(id: "a5", name: "crowdsec", image: "crowdsecurity/crowdsec", state: "running", status: "Up 6 hours"),
             Container(id: "a6", name: "mangosd", image: "cmangos/mangosd", state: "exited", status: "Exited (139) 9 days ago",
@@ -47,10 +48,26 @@ public actor DemoDocker: DockerClient {
         }
     }
 
-    public nonisolated func logs(_ name: String, tail: Int, since: Date?) -> AsyncThrowingStream<String, Error> {
-        let lines = Self.sampleLines(for: name, now: now)
+    private var cleared: Set<String> = []
+
+    public func clearLogs(_ names: [String]) async throws { cleared.formUnion(names) }
+
+    public func recentEvents(hours: Int) async throws -> [DockerEvent] {
+        [DockerEvent(action: "die", name: "mangosd", date: now.addingTimeInterval(-5 * 3600), exitCode: 139),
+         DockerEvent(action: "start", name: "tautulli", date: now.addingTimeInterval(-50 * 60)),
+         DockerEvent(action: "health_status: unhealthy", name: "tautulli", date: now.addingTimeInterval(-20 * 60)),
+         DockerEvent(action: "start", name: "tautulli", date: now.addingTimeInterval(-10 * 60))]
+    }
+
+    public nonisolated func logs(_ names: [String], tail: Int, since: Date?) -> AsyncThrowingStream<String, Error> {
+        let lines = names.count == 1
+            ? Self.sampleLines(for: names[0], now: now)
+            : names.flatMap { name in Self.sampleLines(for: name, now: now).map { (name, $0) } }
+                .sorted { $0.1 < $1.1 }   // in time order, like the server's merge
+                .map { "\($0.0)\(LogLine.mergedSeparator)\($0.1)" }
         return AsyncThrowingStream { continuation in
-            if since == nil { for line in lines.suffix(tail) { continuation.yield(line) } }
+            // The sample lines are all recent: a day's window gets every one.
+            for line in since == nil ? Array(lines.suffix(tail)) : lines { continuation.yield(line) }
             // Stays open like `docker logs -f`.
         }
     }
@@ -126,13 +143,14 @@ public actor DemoDocker: DockerClient {
         }
     }
 
-    public func problems() async throws -> [String: ProblemSummary] {
+    public func problems(ignoring rules: IgnoreRules) async throws -> [String: ProblemSummary] {
         var output = ""
         for container in list {
             output += "@@@ \(container.name)\n"
+            if cleared.contains(container.name) { continue }
             output += Self.sampleLines(for: container.name, now: now).joined(separator: "\n") + "\n"
         }
-        return ProblemSummary.parse(output)
+        return ProblemSummary.parse(output, ignoring: rules)
     }
 
     /// Lines in the formats real containers write, with Docker's timestamps.

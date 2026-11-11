@@ -31,39 +31,63 @@ enum Connection: Equatable {
     case failed(String)
 }
 
-/// One container's log: its own store and viewer state, kept while the app
-/// runs so filters and Clear survive moving between containers.
+/// One container's log, or a compose stack's merged log: its own store and
+/// viewer state, kept while the app runs so filters and Clear survive
+/// moving between pages.
 @Observable
 final class ContainerLog {
-    let name: String
+    /// The container's name, or "stack:<project>".
+    let key: String
+    /// The containers it follows: one, or a stack's.
+    let names: [String]
     let store = LogStore(limit: 20_000)
     let viewer: LogViewerModel
     var state: ContainerState?
+    /// Set when the log holds a time window ("the last 24 hours") instead of the last lines.
+    private(set) var loadedSince: Date?
     private var follow: Task<Void, Never>?
-    /// Docker's time of the newest line, to pick up where the stream stopped.
-    private let newest = NewestDate()
+    /// Docker's time of the newest line per container, to pick up where the stream stopped.
+    private let newest = NewestDates()
+    private let ignore: IgnoreBox
 
-    init(name: String) {
-        self.name = name
+    init(key: String, names: [String], ignore: IgnoreBox) {
+        self.key = key
+        self.names = names
+        self.ignore = ignore
         viewer = LogViewerModel(store: store)
     }
 
+    var isStack: Bool { names.count > 1 }
     var isFollowing: Bool { follow != nil }
 
     /// Streams new lines into the store until `stop()`. Reconnects after a
     /// dropped connection from the newest line it has.
     func start(client: any DockerClient, tail: Int) {
         guard follow == nil else { return }
-        let store = store, name = name, newest = newest
+        let store = store, names = names, newest = newest, ignore = ignore, window = loadedSince
+        let merged = names.count > 1
         follow = Task.detached(priority: .userInitiated) {
             while !Task.isCancelled {
                 do {
-                    let since = newest.value
-                    for try await raw in client.logs(name, tail: tail, since: since.map { $0.addingTimeInterval(-1) }) {
-                        let line = LogLine.parse(Substring(raw))
+                    let since = newest.oldest(of: names).map { $0.addingTimeInterval(-1) } ?? window
+                    for try await raw in client.logs(names, tail: tail, since: since) {
+                        var container = names[0]
+                        var text = Substring(raw)
+                        if merged, let mark = raw.firstIndex(of: Character(LogLine.mergedSeparator)) {
+                            container = String(raw[..<mark])
+                            text = raw[raw.index(after: mark)...]
+                        }
+                        var line = LogLine.parse(text)
                         // Already shown (the reconnect's first second, or an old stream still finishing).
-                        if let date = line.date, !newest.advance(to: date) { continue }
-                        store.post(line.level, line.message, source: line.source, date: line.date ?? Date(), detail: line.detail)
+                        if let date = line.date, !newest.advance(container, to: date) { continue }
+                        // Known noise: dimmed as Debug, with its own level word kept.
+                        if line.level.isProblem, ignore.rules.ignores(line.message, in: container) {
+                            line.code = line.code ?? line.level.code
+                            line.level = .debug
+                        }
+                        let source = merged ? Stacks.shortName(container, in: names) : line.source
+                        let message = merged && !line.source.isEmpty ? "[\(line.source)] \(line.message)" : line.message
+                        store.post(line.level, message, source: source, date: line.date ?? Date(), detail: line.detail)
                     }
                 } catch {
                     if Task.isCancelled { return }
@@ -76,6 +100,15 @@ final class ContainerLog {
     func stop() {
         follow?.cancel()
         follow = nil
+    }
+
+    /// Loads everything since `date` (or the last lines again, with nil), from scratch.
+    func reload(client: any DockerClient, tail: Int, since date: Date?) {
+        stop()
+        store.clearMemory()
+        newest.reset()
+        loadedSince = date
+        start(client: client, tail: tail)
     }
 
     /// The header's facts and the insights, from `docker inspect`.
@@ -94,26 +127,86 @@ final class ContainerLog {
     }
 }
 
-/// Written by the log stream off the main actor.
-nonisolated final class NewestDate: @unchecked Sendable {
-    private let lock = NSLock()
-    private var date: Date?
-    var value: Date? { lock.withLock { date } }
+/// Compose stacks: containers that share a compose project.
+enum Stacks {
+    /// "azeroth-survivors-cmangos-mangosd-1" in the "azeroth-survivors-cmangos" stack → "mangosd".
+    nonisolated static func shortName(_ name: String, in names: [String]) -> String {
+        var short = name
+        let prefix = commonPrefix(names)
+        if prefix.count > 2, short.hasPrefix(prefix), short.count > prefix.count { short.removeFirst(prefix.count) }
+        if let dash = short.lastIndex(of: "-"), short[short.index(after: dash)...].allSatisfy(\.isNumber), dash > short.startIndex {
+            short = String(short[..<dash])
+        }
+        return short
+    }
 
-    /// Moves to `newer` and returns true, or false when it isn't newer.
-    func advance(to newer: Date) -> Bool {
+    nonisolated static func commonPrefix(_ names: [String]) -> String {
+        guard var prefix = names.first else { return "" }
+        for name in names.dropFirst() {
+            while !name.hasPrefix(prefix) { prefix.removeLast() }
+        }
+        // Up to the last separator, so "azeroth-survivors-cmangos-m" doesn't eat a letter.
+        if let dash = prefix.lastIndex(where: { $0 == "-" || $0 == "_" }) { return String(prefix[...dash]) }
+        return ""
+    }
+}
+
+/// Written by the log streams off the main actor.
+nonisolated final class NewestDates: @unchecked Sendable {
+    private let lock = NSLock()
+    private var dates: [String: Date] = [:]
+
+    /// The oldest of the containers' newest lines: where a reconnect picks up.
+    func oldest(of names: [String]) -> Date? {
         lock.withLock {
-            if let date, newer <= date { return false }
-            date = newer
+            let known = names.compactMap { dates[$0] }
+            return known.count == names.count ? known.min() : nil
+        }
+    }
+
+    /// Moves the container to `newer` and returns true, or false when it isn't newer.
+    func advance(_ name: String, to newer: Date) -> Bool {
+        lock.withLock {
+            if let date = dates[name], newer <= date { return false }
+            dates[name] = newer
             return true
+        }
+    }
+
+    func reset() { lock.withLock { dates = [:] } }
+}
+
+/// The ignore rules, read by the log streams off the main actor.
+nonisolated final class IgnoreBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var value = IgnoreRules()
+    var rules: IgnoreRules {
+        get { lock.withLock { value } }
+        set { lock.withLock { value = newValue } }
+    }
+}
+
+/// What the sidebar shows in the detail: the server's overview, one container, or a compose stack.
+enum Page: Hashable {
+    case overview
+    case container(String)
+    case stack(String)
+
+    /// The key of the page's log.
+    var logKey: String? {
+        switch self {
+        case .overview: nil
+        case .container(let name): name
+        case .stack(let project): "stack:\(project)"
         }
     }
 }
 
-/// What the sidebar shows in the detail: the server's overview or one container.
-enum Page: Hashable {
-    case overview
-    case container(String)
+/// Logs to empty on the server, waiting for confirmation.
+struct ClearRequest: Identifiable {
+    var names: [String]
+    var title: String
+    var id: String { names.joined(separator: ",") }
 }
 
 /// App-wide state that menus, toolbars, and views share.
@@ -123,7 +216,7 @@ final class AppModel {
     private(set) var containers: [Container] = []
     private(set) var connection = Connection.connecting
     var page: Page? = .overview {
-        didSet { if page != oldValue { selectionChanged(from: oldValue.flatMap(Self.name)) } }
+        didSet { if page != oldValue { pageChanged(from: oldValue) } }
     }
     /// The container shown, or nil on the overview.
     var selection: String? {
@@ -152,6 +245,19 @@ final class AppModel {
     /// A failed Start, Stop or Restart.
     var actionError: String?
     private(set) var busy: Set<String> = []
+    /// An ignore rule being written.
+    var ignoreDraft: IgnoreDraft?
+    /// Clearing logs on the server, waiting for confirmation.
+    var confirmClear: ClearRequest?
+    private(set) var clearing = false
+    /// Notable events of the last day (starts, crashes, health), newest first.
+    private(set) var recentEvents: [DockerEvent] = []
+    /// Known noise, saved on this Mac.
+    private(set) var ignoreRules = IgnoreRules() {
+        didSet { ignoreBox.rules = ignoreRules }
+    }
+    let ignoreBox = IgnoreBox()
+    let notifier = Notifier()
     private var logs: [String: ContainerLog] = [:]
     private var watchers: [Task<Void, Never>] = []
     private var refreshTask: Task<Void, Never>?
@@ -160,12 +266,22 @@ final class AppModel {
         didSet { if !Store.isOverridden { UserDefaults.standard.set(settingsTab.rawValue, forKey: "settings.tab") } }
     }
 
+    /// The menu bar icon. Off in test runs, which never touch the real menu bar.
+    var showInMenuBar = !Store.isOverridden && MenuBarStatus.isShown {
+        didSet { if !Store.isOverridden { UserDefaults.standard.set(showInMenuBar, forKey: MenuBarStatus.showKey) } }
+    }
+
     /// For the app delegate at quit.
     static weak var current: AppModel?
 
     init() {
         client = Self.makeClient()
         Self.current = self
+        if !Store.isOverridden, let data = UserDefaults.standard.data(forKey: "ignoreRules"),
+           let rules = try? JSONDecoder().decode(IgnoreRules.self, from: data) {
+            ignoreRules = rules
+        }
+        ignoreBox.rules = ignoreRules
     }
 
     static func makeClient() -> any DockerClient {
@@ -174,13 +290,35 @@ final class AppModel {
     }
 
     var selected: Container? { containers.first { $0.name == selection } }
-    var selectedLog: ContainerLog? { selection.map(log(for:)) }
 
     func log(for name: String) -> ContainerLog {
         if let log = logs[name] { return log }
-        let log = ContainerLog(name: name)
+        let log = ContainerLog(key: name, names: [name], ignore: ignoreBox)
         logs[name] = log
         return log
+    }
+
+    /// A compose stack's merged log.
+    func stackLog(_ project: String) -> ContainerLog {
+        let key = "stack:\(project)"
+        if let log = logs[key] { return log }
+        let log = ContainerLog(key: key, names: stacks[project]?.map(\.name) ?? [], ignore: ignoreBox)
+        logs[key] = log
+        return log
+    }
+
+    /// The log of a container or stack page.
+    func log(for page: Page) -> ContainerLog? {
+        switch page {
+        case .overview: nil
+        case .container(let name): log(for: name)
+        case .stack(let project): stackLog(project)
+        }
+    }
+
+    /// Compose projects with more than one container.
+    var stacks: [String: [Container]] {
+        Dictionary(grouping: containers.filter { $0.project != nil }, by: { $0.project ?? "" }).filter { $0.value.count > 1 }
     }
 
     var shown: [Container] {
@@ -209,8 +347,10 @@ final class AppModel {
         if page == nil || (selection != nil && !containers.contains(where: { $0.name == selection })) {
             page = .overview
         } else {
-            selectionChanged(from: nil)
+            pageChanged(from: nil)
         }
+        Task { await notifier.requestPermission() }
+        watchers.append(Task { await loadRecentEvents() })
         watchers.append(Task { await loadServerDetails() })
         watchers.append(Task { await watchHostLoad() })
         watchers.append(Task { await scanProblemsRegularly() })
@@ -280,9 +420,11 @@ final class AppModel {
         guard !scanningProblems else { return }
         scanningProblems = true
         defer { scanningProblems = false }
-        if let found = try? await client.problems() {
+        if let found = try? await client.problems(ignoring: ignoreRules) {
+            let previous = problemsScanned == nil ? nil : problems
             problems = found
             problemsScanned = Date()
+            if let previous { notifier.newErrors(found, since: previous) }
         }
     }
 
@@ -303,11 +445,82 @@ final class AppModel {
         }
     }
 
-    /// Opens a container's log showing only its problems (or all of it).
+    /// Opens a container's log. For its problems: the whole last day, only warnings and errors.
     func open(_ name: String, problemsOnly: Bool = false) {
+        let log = log(for: name)
+        if problemsOnly, log.loadedSince == nil {
+            log.reload(client: client, tail: ServerSettings.tail, since: Date().addingTimeInterval(-Double(ProblemSummary.hours) * 3600))
+        }
         selection = name
-        let viewer = log(for: name).viewer
-        viewer.filter.levels = problemsOnly ? [.warning, .error, .critical] : viewer.defaultFilter.levels
+        log.viewer.filter.levels = problemsOnly ? [.warning, .error, .critical] : log.viewer.defaultFilter.levels
+    }
+
+    /// Back to the last lines after a day's window.
+    func loadLatest(_ log: ContainerLog) {
+        log.reload(client: client, tail: ServerSettings.tail, since: nil)
+    }
+
+    // MARK: Ignoring and clearing
+
+    func ignore(_ rule: IgnoreRules.Rule) {
+        guard !rule.text.trimmingCharacters(in: .whitespaces).isEmpty, !ignoreRules.rules.contains(rule) else { return }
+        ignoreRules.rules.append(rule)
+        saveIgnoreRules()
+        Task { await scanProblems() }
+    }
+
+    func removeIgnore(_ rule: IgnoreRules.Rule) {
+        ignoreRules.rules.removeAll { $0 == rule }
+        saveIgnoreRules()
+        Task { await scanProblems() }
+    }
+
+    private func saveIgnoreRules() {
+        guard !Store.isOverridden, let data = try? JSONEncoder().encode(ignoreRules) else { return }
+        UserDefaults.standard.set(data, forKey: "ignoreRules")
+    }
+
+    /// Asks first: clearing can't be undone.
+    func requestClearLogs(_ names: [String]? = nil) {
+        if let names, names.count == 1 {
+            confirmClear = ClearRequest(names: names, title: names[0])
+        } else {
+            let all = names ?? containers.map(\.name)
+            confirmClear = ClearRequest(names: all, title: names == nil ? "all \(all.count) containers" : "\(all.count) containers")
+        }
+    }
+
+    /// Empties the containers' log files on the server, then reads everything again.
+    func clearLogs(_ names: [String]) async {
+        clearing = true
+        defer { clearing = false }
+        do {
+            try await client.clearLogs(names)
+        } catch {
+            actionError = error.localizedDescription
+            return
+        }
+        let cleared = Set(names)
+        for log in logs.values where !cleared.isDisjoint(with: log.names) {
+            if log.isFollowing { log.reload(client: client, tail: ServerSettings.tail, since: nil) } else { log.store.clearMemory() }
+        }
+        problemsScanned = nil   // no "new errors" notification for what was there before
+        await scanProblems()
+    }
+
+    // MARK: Events
+
+    private func loadRecentEvents() async {
+        if let events = try? await client.recentEvents(hours: 24) {
+            recentEvents = events.sorted { $0.date > $1.date }
+        }
+    }
+
+    private func record(_ event: DockerEvent) {
+        guard event.isNotable else { return }
+        recentEvents.insert(event, at: 0)
+        if recentEvents.count > 300 { recentEvents.removeLast(recentEvents.count - 300) }
+        notifier.event(event, recent: recentEvents)
     }
 
     // MARK: Icons
@@ -346,8 +559,9 @@ final class AppModel {
         while !Task.isCancelled {
             do {
                 for try await line in client.events() {
-                    guard let event = DockerEvent.parse(line), event.changesList else { continue }
-                    scheduleRefresh(about: event.name)
+                    guard let event = DockerEvent.parse(line) else { continue }
+                    record(event)
+                    if event.changesList { scheduleRefresh(about: event.name) }
                 }
             } catch {}
             try? await Task.sleep(for: .seconds(5))
@@ -383,15 +597,15 @@ final class AppModel {
             try? await loadContainers()
             if name == selection || selection == nil { await inspect(name) }
             // A container that came back starts its log stream again.
-            if let selection, let log = logs[selection], !log.isFollowing { log.start(client: client, tail: ServerSettings.tail) }
+            if let key = page?.logKey, let log = logs[key], !log.isFollowing { log.start(client: client, tail: ServerSettings.tail) }
         }
     }
 
-    private func selectionChanged(from old: String?) {
-        if let old { logs[old]?.stop() }
-        guard let selection else { return }
-        log(for: selection).start(client: client, tail: ServerSettings.tail)
-        Task { await inspect(selection) }
+    private func pageChanged(from old: Page?) {
+        if let key = old?.logKey { logs[key]?.stop() }
+        guard let page, let log = log(for: page) else { return }
+        log.start(client: client, tail: ServerSettings.tail)
+        if let selection { Task { await inspect(selection) } }
     }
 
     func inspect(_ name: String) async {

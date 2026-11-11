@@ -216,11 +216,14 @@ public struct DockerEvent: Sendable, Equatable {
     public var action: String
     public var name: String
     public var date: Date
+    /// For "die": the container's exit code.
+    public var exitCode: Int?
 
-    public init(action: String, name: String, date: Date) {
+    public init(action: String, name: String, date: Date, exitCode: Int? = nil) {
         self.action = action
         self.name = name
         self.date = date
+        self.exitCode = exitCode
     }
 
     public static func parse(_ line: some StringProtocol) -> DockerEvent? {
@@ -232,7 +235,37 @@ public struct DockerEvent: Sendable, Equatable {
         let nanos = object["timeNano"] as? Double
         let seconds = object["time"] as? Double ?? 0
         return DockerEvent(action: action, name: name,
-                           date: Date(timeIntervalSince1970: nanos.map { $0 / 1e9 } ?? seconds))
+                           date: Date(timeIntervalSince1970: nanos.map { $0 / 1e9 } ?? seconds),
+                           exitCode: (attributes?["exitCode"] as? String).flatMap { Int($0) })
+    }
+
+    /// Worth showing in the overview's timeline and worth a notification.
+    public var isNotable: Bool {
+        ["start", "die", "oom", "restart"].contains(action) || action == "health_status: unhealthy" || action == "health_status: healthy"
+    }
+
+    /// A crash, an out-of-memory kill or a failed health check (not a normal stop).
+    public var isProblem: Bool {
+        switch action {
+        case "oom", "health_status: unhealthy": return true
+        case "die": return exitCode.map { $0 != 0 && $0 != 143 } ?? false
+        default: return false
+        }
+    }
+
+    /// "Stopped with exit code 137", "Started", "Became unhealthy".
+    public var summary: String {
+        switch action {
+        case "start": return "Started"
+        case "restart": return "Restarted"
+        case "oom": return "Ran out of memory"
+        case "die":
+            guard let exitCode else { return "Stopped" }
+            return exitCode == 0 || exitCode == 143 ? "Stopped" : "Stopped with exit code \(exitCode)"
+        case "health_status: unhealthy": return "Became unhealthy"
+        case "health_status: healthy": return "Healthy again"
+        default: return action.capitalized
+        }
     }
 
     /// Events that change what the sidebar shows.

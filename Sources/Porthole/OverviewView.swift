@@ -8,26 +8,46 @@ struct OverviewView: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Space.xxl) {
-                ServerTiles()
-                if let disks = model.hostInfo?.disks, !disks.isEmpty {
-                    StorageTiles(disks: disks)
+        GeometryReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: Space.xxl) {
+                    ServerTiles()
+                    if proxy.size.width >= 1200 {
+                        // Wide (full screen): problems on the left, the rest on the right.
+                        HStack(alignment: .top, spacing: Space.xxl) {
+                            VStack(alignment: .leading, spacing: Space.xxl) {
+                                AttentionSection()
+                                ProblemList()
+                            }
+                            .frame(maxWidth: .infinity)
+                            VStack(alignment: .leading, spacing: Space.xxl) {
+                                StorageSection(columns: 1)
+                                EventList()
+                                BusiestList()
+                            }
+                            .frame(width: min(520, proxy.size.width * 0.36))
+                        }
+                    } else {
+                        StorageSection(columns: nil)
+                        AttentionSection()
+                        ProblemList()
+                        EventList()
+                        BusiestList()
+                    }
                 }
-                if !model.containersNeedingAttention.isEmpty {
-                    AttentionList()
-                }
-                ProblemList()
-                BusiestList()
+                .padding(Space.margin)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .gridArea("overview")
             }
-            .padding(Space.margin)
-            .frame(maxWidth: 1100, alignment: .leading)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .gridArea("overview")
         }
         .navigationTitle(model.hostInfo?.hostname ?? ServerSettings.host)
         .navigationSubtitle(model.hostInfo?.subtitle ?? "")
         .toolbar {
+            ToolbarItem {
+                Button("Clear All Logs on Server…", systemImage: "trash") { model.requestClearLogs() }
+                    .help("Empty every container's log file on the server, to start fresh")
+                    .disabled(model.clearing || model.containers.isEmpty)
+            }
             ToolbarItem {
                 Button("Scan Logs for Problems", systemImage: "arrow.clockwise") {
                     Task { await model.scanProblems() }
@@ -45,11 +65,19 @@ struct ServerTiles: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
+        // Four across, stretched, whenever they fit; fewer on a narrow window.
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: Space.md) { tiles }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: Space.md)], alignment: .leading, spacing: Space.md) { tiles }
+        }
+    }
+
+    @ViewBuilder
+    private var tiles: some View {
         let load = model.hostLoad
         let running = model.containers.filter(\.isRunning).count
         let stopped = model.containers.count - running
         let unhealthy = model.containers.filter { $0.health == "unhealthy" }.count
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: Space.md)], alignment: .leading, spacing: Space.md) {
             Tile(title: "CPU", symbol: "cpu") {
                 BigNumber(load.cpu.last.map(Format.percent) ?? "—")
                 Sparkline(values: load.cpu).frame(height: 28)
@@ -82,17 +110,30 @@ struct ServerTiles: View {
                 Text(load.uptime > 0 ? "Since \(Date(timeIntervalSinceNow: -load.uptime).formatted(date: .abbreviated, time: .shortened))" : " ")
                     .font(.caption).foregroundStyle(.secondary)
             }
+    }
+}
+
+struct StorageSection: View {
+    @Environment(AppModel.self) private var model
+    /// A fixed number of columns, or nil to fit the width.
+    let columns: Int?
+
+    var body: some View {
+        if let disks = model.hostInfo?.disks, !disks.isEmpty {
+            StorageTiles(disks: disks, columns: columns)
         }
     }
 }
 
 struct StorageTiles: View {
     let disks: [HostInfo.Disk]
+    var columns: Int?
 
     var body: some View {
         VStack(alignment: .leading, spacing: Space.sm) {
             SectionTitle("Storage")
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: Space.md)], alignment: .leading, spacing: Space.md) {
+            LazyVGrid(columns: columns.map { Array(repeating: GridItem(.flexible(), spacing: Space.md), count: $0) }
+                      ?? [GridItem(.adaptive(minimum: 200), spacing: Space.md)], alignment: .leading, spacing: Space.md) {
                 ForEach(disks) { disk in
                     let full = disk.fraction >= 0.9
                     Tile(title: disk.title, symbol: disk.mount == "/boot" ? "memorychip" : "internaldrive") {
@@ -117,6 +158,14 @@ struct StorageTiles: View {
 }
 
 // MARK: Containers
+
+struct AttentionSection: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        if !model.containersNeedingAttention.isEmpty { AttentionList() }
+    }
+}
 
 struct AttentionList: View {
     @Environment(AppModel.self) private var model
@@ -192,7 +241,19 @@ struct ProblemRow: View {
                 }
             }
         }
-        .help("Show \(container.name)'s warnings and errors")
+        .help("Show \(container.name)'s warnings and errors of the last day")
+        .contextMenu {
+            Button("Show Warnings and Errors") { model.open(container.name, problemsOnly: true) }
+            Button("Show Whole Log") { model.open(container.name) }
+            if let latest = summary.latest {
+                Divider()
+                Button("Ignore Messages Like the Latest…", systemImage: "eye.slash") {
+                    model.ignoreDraft = IgnoreDraft(container: container.name, message: latest.message)
+                }
+            }
+            Divider()
+            Button("Clear Log on Server…", systemImage: "trash") { model.requestClearLogs([container.name]) }
+        }
     }
 
     private var latest: String? {
@@ -215,6 +276,77 @@ struct CountChip: View {
             .font(.callout.monospacedDigit())
             .foregroundStyle(isError ? .red : .orange)
             .fixedSize()
+    }
+}
+
+/// Starts, crashes and health changes of the last day, newest first.
+struct EventList: View {
+    @Environment(AppModel.self) private var model
+    @State private var showAll = false
+
+    var body: some View {
+        let events = model.recentEvents
+        VStack(alignment: .leading, spacing: Space.sm) {
+            SectionTitle("Events, Last 24 Hours")
+            GroupBox {
+                if events.isEmpty {
+                    Text("No container started, stopped or changed health.")
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, Space.sm)
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(Array(events.prefix(showAll ? 300 : 12).enumerated()), id: \.offset) { index, event in
+                            if index > 0 { Divider() }
+                            EventRow(event: event)
+                        }
+                        if events.count > 12 {
+                            Divider()
+                            Button(showAll ? "Show Fewer" : "Show All \(events.count)") { showAll.toggle() }
+                                .buttonStyle(.link)
+                                .padding(.vertical, Space.sm)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct EventRow: View {
+    @Environment(AppModel.self) private var model
+    let event: DockerEvent
+
+    var body: some View {
+        let look = Self.look(event)
+        Button {
+            if model.containers.contains(where: { $0.name == event.name }) { model.open(event.name) }
+        } label: {
+            HStack(spacing: Space.md) {
+                Image(systemName: look.symbol).foregroundStyle(look.color).frame(width: 16)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(event.name).lineLimit(1)
+                    Text(event.summary).font(.caption).foregroundStyle(event.isProblem ? look.color : .secondary)
+                }
+                Spacer(minLength: Space.sm)
+                Text(event.date.formatted(date: .omitted, time: .shortened))
+                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+            }
+            .padding(.vertical, Space.xs)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .help(event.date.formatted(date: .abbreviated, time: .standard))
+    }
+
+    static func look(_ event: DockerEvent) -> (symbol: String, color: Color) {
+        switch event.action {
+        case "start", "restart": ("play.circle.fill", .green)
+        case "oom": ("memorychip.fill", .red)
+        case "health_status: unhealthy": ("exclamationmark.triangle.fill", .orange)
+        case "health_status: healthy": ("checkmark.circle.fill", .green)
+        default: event.isProblem ? ("xmark.octagon.fill", .red) : ("stop.circle", .secondary)
+        }
     }
 }
 
@@ -290,7 +422,7 @@ struct Tile<Content: View>: View {
             VStack(alignment: .leading, spacing: Space.xs) {
                 content
             }
-            .frame(maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
+            .frame(minWidth: 176, maxWidth: .infinity, minHeight: 80, alignment: .topLeading)
         } label: {
             Label(title, systemImage: symbol).foregroundStyle(.secondary)
         }

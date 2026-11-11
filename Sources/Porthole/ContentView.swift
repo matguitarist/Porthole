@@ -28,6 +28,18 @@ struct ContentView: View {
         } message: {
             Text("It stops answering until you start it again. Anything that depends on it stops working too.")
         }
+        .confirmationDialog(Text("Clear the log of \(model.confirmClear?.title ?? "")?"), isPresented: Binding(
+            get: { model.confirmClear != nil }, set: { if !$0 { model.confirmClear = nil } })) {
+            Button("Clear on Server", role: .destructive) {
+                if let request = model.confirmClear { Task { await model.clearLogs(request.names) } }
+                model.confirmClear = nil
+            }
+        } message: {
+            Text("Porthole empties the log files on the server. Everything logged so far is gone for good, here, in Dozzle and in docker logs. New messages appear as usual.")
+        }
+        .sheet(item: $model.ignoreDraft) { draft in
+            IgnoreSheet(draft: draft)
+        }
         .alert("Couldn't Do That", isPresented: Binding(
             get: { model.actionError != nil }, set: { if !$0 { model.actionError = nil } })) {
         } message: {
@@ -50,6 +62,13 @@ struct ContainerSidebar: View {
                     .badge(model.containersWithProblems.filter { $0.summary.errors > 0 }.count)
                     .tag(Page.overview)
             }
+            if model.search.isEmpty, !model.stacks.isEmpty {
+                Section("Stacks") {
+                    ForEach(model.stacks.keys.sorted(), id: \.self) { project in
+                        StackRow(project: project, containers: model.stacks[project] ?? []).tag(Page.stack(project))
+                    }
+                }
+            }
             if !model.running.isEmpty {
                 Section("Running") {
                     ForEach(model.running) { ContainerRow(container: $0).tag(Page.container($0.name)) }
@@ -66,6 +85,8 @@ struct ContainerSidebar: View {
         .contextMenu(forSelectionType: Page.self) { pages in
             if case .container(let name) = pages.first, let container = model.containers.first(where: { $0.name == name }) {
                 ContainerActions(container: container)
+            } else if case .stack(let project) = pages.first {
+                Button("Clear Logs on Server…", systemImage: "trash") { model.requestClearLogs(model.stacks[project]?.map(\.name) ?? []) }
             }
         }
     }
@@ -193,6 +214,8 @@ struct ContainerActions: View {
             Divider()
             Button("Open Web Page", systemImage: "safari") { NSWorkspace.shared.open(url) }
         }
+        Divider()
+        Button("Clear Log on Server…", systemImage: "trash") { model.requestClearLogs([container.name]) }
     }
 }
 
@@ -204,9 +227,24 @@ struct ContainerDetail: View {
     var body: some View {
         if model.page == .overview {
             OverviewView()
+        } else if case .stack(let project) = model.page {
+            let log = model.stackLog(project)
+            LogViewer(model: log.viewer, options: LogViewerOptions(
+                emptyTitle: "No Messages", emptyMessage: "The containers of \(project) haven't logged anything yet.",
+                entryInspector: { selected, _ in AnyView(EntryInspector(entries: selected, container: nil, stack: log)) },
+                sourceColor: { _ in Palette.accentText }))
+                .id(log.key)
+                .navigationTitle(project)
+                .navigationSubtitle("\(log.names.count) containers")
+                .toolbar {
+                    ToolbarItem {
+                        Button("Clear Logs on Server…", systemImage: "trash") { model.requestClearLogs(log.names) }
+                            .help("Empty these containers' log files on the server")
+                    }
+                }
         } else if let name = model.selection {
             let log = model.log(for: name)
-            LogViewer(model: log.viewer, options: options(for: name))
+            LogViewer(model: log.viewer, options: options(for: name, log: log))
                 .id(name)
                 .navigationTitle(name)
                 .navigationSubtitle(model.selected?.image ?? "")
@@ -217,7 +255,7 @@ struct ContainerDetail: View {
         }
     }
 
-    private func options(for name: String) -> LogViewerOptions {
+    private func options(for name: String, log: ContainerLog) -> LogViewerOptions {
         LogViewerOptions(
             emptyTitle: "No Messages",
             emptyMessage: "\(name) hasn't logged anything yet.",
@@ -225,7 +263,9 @@ struct ContainerDetail: View {
             insightActions: { insight in
                 AnyView(InsightActions(insight: insight, name: name))
             },
+            banner: { _ in AnyView(WindowBanner(log: log)) },
             headerAccessory: { AnyView(UsageView(name: name)) },
+            entryInspector: { selected, _ in AnyView(EntryInspector(entries: selected, container: name, stack: nil)) },
             sourceColor: { _ in .secondary })
     }
 
@@ -249,6 +289,8 @@ struct ContainerDetail: View {
                     Button("Open Web Page", systemImage: "safari") { NSWorkspace.shared.open(url) }
                         .help("Open \(url.absoluteString) (Command-O)")
                 }
+                Button("Clear Log on Server…", systemImage: "trash") { model.requestClearLogs([container.name]) }
+                    .help("Empty \(container.name)'s log file on the server")
             }
         }
     }
@@ -343,5 +385,140 @@ enum Format {
     static func window(_ count: Int) -> String {
         let seconds = count * 2
         return seconds < 120 ? "\(seconds) seconds" : "\(seconds / 60) minutes"
+    }
+}
+
+// MARK: Stacks, windows, ignoring
+
+struct StackRow: View {
+    let project: String
+    let containers: [Container]
+
+    var body: some View {
+        let running = containers.filter(\.isRunning).count
+        HStack(spacing: Space.sm) {
+            if let first = containers.first { ContainerIcon(container: first) }
+            VStack(alignment: .leading, spacing: 0) {
+                Text(project).lineLimit(1)
+                Text("\(running) of \(containers.count) running")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .help("The merged log of \(containers.map(\.name).joined(separator: ", "))")
+    }
+}
+
+/// Above the log when it holds a day's window instead of the last lines.
+struct WindowBanner: View {
+    @Environment(AppModel.self) private var model
+    let log: ContainerLog
+
+    var body: some View {
+        if let since = log.loadedSince {
+            HStack(spacing: Space.sm) {
+                Image(systemName: "clock.arrow.circlepath").foregroundStyle(.secondary)
+                Text("Everything since \(since.formatted(date: .abbreviated, time: .shortened)).")
+                Spacer()
+                Button("Show Latest Lines") { model.loadLatest(log) }
+            }
+            .font(.callout)
+            .padding(.horizontal, Space.lg)
+            .padding(.vertical, Space.sm)
+        }
+    }
+}
+
+/// The selected messages, and "Ignore Messages Like This".
+struct EntryInspector: View {
+    @Environment(AppModel.self) private var model
+    let entries: [LogEntry]
+    /// The container, or nil in a stack (then the entry's source names it).
+    let container: String?
+    let stack: ContainerLog?
+
+    var body: some View {
+        if let entry = entries.last {
+            ScrollView {
+                VStack(alignment: .leading, spacing: Space.md) {
+                    Label(entry.displayCode, systemImage: entry.level.symbol)
+                        .foregroundStyle(entry.level.color)
+                        .font(.headline)
+                    Text(entry.message).textSelection(.enabled)
+                    if let detail = entry.detail {
+                        Text(detail).font(.callout.monospaced()).foregroundStyle(.secondary).textSelection(.enabled)
+                    }
+                    if entries.count > 1 {
+                        Text("\(entries.count) messages selected").font(.caption).foregroundStyle(.secondary)
+                    }
+                    Divider()
+                    Button("Ignore Messages Like This…", systemImage: "eye.slash") {
+                        model.ignoreDraft = IgnoreDraft(container: containerName(entry), message: entry.message)
+                    }
+                    Text("They stop counting as problems in the overview and in alerts, and show dimmed here.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                .padding(Space.lg)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        } else {
+            ContentUnavailableView("No Message Selected", systemImage: "text.alignleft",
+                                   description: Text("Select a message to see it whole, or to ignore messages like it."))
+        }
+    }
+
+    private func containerName(_ entry: LogEntry) -> String? {
+        if let container { return container }
+        // In a stack, the source is the short name: find the container it stands for.
+        return stack?.names.first { Stacks.shortName($0, in: stack?.names ?? []) == entry.source }
+    }
+}
+
+/// A rule waiting for the person to confirm its text.
+struct IgnoreDraft: Identifiable {
+    var container: String?
+    var message: String
+    var id: String { "\(container ?? "*")|\(message)" }
+}
+
+struct IgnoreSheet: View {
+    @Environment(AppModel.self) private var model
+    @Environment(\.dismiss) private var dismiss
+    let draft: IgnoreDraft
+    @State private var text = ""
+    @State private var everywhere = false
+
+    var body: some View {
+        Form {
+            Section {
+                TextField("Messages containing", text: $text, axis: .vertical)
+                    .lineLimit(2...4)
+                if let container = draft.container {
+                    Picker("In", selection: $everywhere) {
+                        Text(container).tag(false)
+                        Text("Every container").tag(true)
+                    }
+                }
+            } header: {
+                Text("Ignore Messages Like This")
+            } footer: {
+                Text("Matching ignores upper and lower case. Keep only the part that stays the same, so the rule catches every copy of the message. Settings > Ignored lists the rules.")
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .fitsContent()
+        .frame(width: 480)
+        .noInitialFocus()
+        .toolbar {
+            ToolbarItem(placement: .cancellationAction) { Button("Cancel") { dismiss() } }
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Ignore") {
+                    model.ignore(IgnoreRules.Rule(container: everywhere ? nil : draft.container, text: text.trimmingCharacters(in: .whitespacesAndNewlines)))
+                    dismiss()
+                }
+                .disabled(text.trimmingCharacters(in: .whitespaces).count < 3)
+            }
+        }
+        .onAppear { text = IgnoreRules.suggestedText(for: draft.message); everywhere = draft.container == nil }
     }
 }
