@@ -35,7 +35,7 @@ struct ContentView: View {
                 model.confirmClear = nil
             }
         } message: {
-            Text("Porthole empties the log files on the server. Everything logged so far is gone for good, here, in Dozzle and in docker logs. New messages appear as usual.")
+            Text("Porthole empties the log files on the server. A running container stops for a moment and starts again, so Docker keeps reading its log. Everything logged so far is gone for good, here, in Dozzle and in docker logs.")
         }
         .sheet(item: $model.ignoreDraft) { draft in
             IgnoreSheet(draft: draft)

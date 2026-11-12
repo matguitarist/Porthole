@@ -63,6 +63,8 @@ Status: done
 As the user, I empty one container's log, or all of them, on the server, after a confirmation, to start from a clean slate.
 Acceptance:
 - [self] Clear All Logs asks first; clearing a log removes its problems.
+- [unit] A running container stops, its log empties, then it starts again; one that won't stop keeps its log.
+Built: Docker 29 breaks `docker logs --tail` for a container whose log file is emptied while it runs, until it restarts, and the hung reads spin dockerd (2026-11-11). So a running container is stopped around the clear.
 Status: done
 
 ### S-009 Alerts
@@ -106,7 +108,7 @@ Acceptance:
 - [unit] `cargo test` in `agent/`: the Rust parser reads levels like the Mac app; host load from /proc; the token check.
 - The image builds for linux/amd64 and reports healthy.
 - `agent/deploy.sh` installs it on Unraid as `porthole-agent`, read only unless `PORTHOLE_ACTIONS=1`.
-Status: built, waiting to be deployed (needs the owner: deploy, then a Cloudflare hostname and Access)
+Status: deployed on the server at :7080 (needs the owner: a Cloudflare hostname and Access)
 
 ### S-015 French
 As the user, with my Mac in French, Porthole speaks French.

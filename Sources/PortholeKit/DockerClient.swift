@@ -163,8 +163,22 @@ public actor SSHDocker: DockerClient {
     }
 
     public func clearLogs(_ names: [String]) async throws {
-        let quoted = names.map(Self.quote).joined(separator: " ")
-        _ = try await command("for c in \(quoted); do f=$(docker inspect -f '{{.LogPath}}' \"$c\") && [ -f \"$f\" ] && truncate -s 0 \"$f\"; done")
+        _ = try await command(Self.clearCommand(names))
+    }
+
+    /// Empties each container's log file. A running container stops first and
+    /// starts again after: on Docker 29, emptying the file under a running
+    /// container breaks `docker logs --tail` for it until it restarts, and
+    /// every such read hangs and spins dockerd. One container at a time, so
+    /// each is down only for its own stop and start.
+    static func clearCommand(_ names: [String]) -> String {
+        let quoted = names.map(quote).joined(separator: " ")
+        return "s=0; for c in \(quoted); do "
+            + "f=$(docker inspect -f '{{.LogPath}}' \"$c\") && [ -f \"$f\" ] || continue; "
+            + "if [ \"$(docker inspect -f '{{.State.Running}}' \"$c\")\" = true ]; then "
+            + "docker stop \"$c\" >/dev/null && truncate -s 0 \"$f\" && docker start \"$c\" >/dev/null; "
+            + "else truncate -s 0 \"$f\"; fi "
+            + "|| { echo \"Couldn't clear $c.\" >&2; s=1; }; done; exit $s"
     }
 
     public func recentEvents(hours: Int) async throws -> [DockerEvent] {
