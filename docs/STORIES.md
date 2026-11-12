@@ -73,6 +73,10 @@ Screens: settings-alerts
 Acceptance:
 - [self] A crash sends one alert, not two (15 minutes of quiet per alert).
 - The Gotify token is kept in the keychain; Send Test reports the result.
+- [unit] dockerd busy means over 150% of a core on average for five minutes, not a spike; the overview's CPU tile says "Docker at N%".
+- [unit] A die right after a kill (docker stop, restart, Docker shutting down) is not a crash.
+- [unit] [self] Warnings and errors from 5 minutes before to 3 minutes after Docker started don't count; the overview says how many it left out.
+Built: dockerd ran at 500% CPU for hours on 2026-11-11 while every container was under 1%, and nothing said so.
 Status: done
 
 ### S-010 Ignore known noise
