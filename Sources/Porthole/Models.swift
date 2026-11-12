@@ -8,8 +8,11 @@ enum ServerSettings {
     static let targetKey = "server.target"
     static let keyFileKey = "server.keyFile"
     static let tailKey = "server.tail"
-    static let defaultTarget = "root@192.168.40.210"
-    static let defaultKeyFile = "~/.ssh/id_ed25519_homeserver"
+    /// Empty until set: a new install asks for the server.
+    static let defaultTarget = ""
+    /// Empty: ssh's own keys and ~/.ssh/config.
+    static let defaultKeyFile = ""
+    static let exampleTarget = "root@192.168.1.10"
 
     static var target: String { UserDefaults.standard.string(forKey: targetKey) ?? defaultTarget }
     static var keyFile: String { UserDefaults.standard.string(forKey: keyFileKey) ?? defaultKeyFile }
@@ -337,6 +340,10 @@ final class AppModel {
         for watcher in watchers { watcher.cancel() }
         watchers = []
         connection = .connecting
+        if !Store.isOverridden, ServerSettings.target.isEmpty {
+            connection = .failed(String(localized: "Enter your server's SSH address in Settings › Server."))
+            return
+        }
         do {
             try await loadContainers()
             connection = .connected

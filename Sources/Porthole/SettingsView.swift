@@ -81,7 +81,7 @@ struct ServerSettingsForm: View {
 
     var body: some View {
         Section {
-            TextField("SSH address", text: $target, prompt: Text(ServerSettings.defaultTarget))
+            TextField("SSH address", text: $target, prompt: Text(ServerSettings.exampleTarget))
                 .help("user@host, or a Host from ~/.ssh/config. Porthole runs the docker command there.")
             HStack {
                 TextField("Key file", text: $keyFile, prompt: Text("ssh's default"))

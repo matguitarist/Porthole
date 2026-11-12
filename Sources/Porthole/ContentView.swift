@@ -97,6 +97,14 @@ struct ContainerSidebar: View {
         case .connecting where model.containers.isEmpty:
             ProgressView("Connecting to \(ServerSettings.host)…")
                 .controlSize(.small)
+        case .failed where ServerSettings.target.isEmpty && !Store.isOverridden:
+            ContentUnavailableView {
+                Label("Set Up Your Server", systemImage: "server.rack")
+            } description: {
+                Text("Enter your Docker server's SSH address in Settings › Server. Porthole runs the docker command there.")
+            } actions: {
+                Button("Settings…") { openSettings() }
+            }
         case .failed(let message):
             ContentUnavailableView {
                 Label("Can't Reach the Server", systemImage: "network.slash")

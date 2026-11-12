@@ -58,9 +58,9 @@ struct LogLineTests {
 
     @Test("logfmt: level= and msg=, other fields kept")
     func logfmt() {
-        let line = text("time=\"2026-11-11T13:54:27Z\" level=info msg=\"Creating turnstile widget\" account=homeserver zone=matshomeserver.com")
+        let line = text("time=\"2026-11-11T13:54:27Z\" level=info msg=\"Creating turnstile widget\" account=homeserver zone=example.com")
         #expect(line.level == .info)
-        #expect(line.message == "Creating turnstile widget  account=homeserver zone=matshomeserver.com")
+        #expect(line.message == "Creating turnstile widget  account=homeserver zone=example.com")
         let lapi = text("time=\"2026-11-11T19:47:25Z\" level=warning msg=\"172.17.0.1 - \\\"GET /v1/heartbeat\\\"\" module=lapi")
         #expect(lapi.level == .warning)
         #expect(lapi.source == "lapi")
