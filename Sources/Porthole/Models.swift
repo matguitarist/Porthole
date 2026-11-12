@@ -400,7 +400,10 @@ final class AppModel {
                 for try await line in client.hostLoad() {
                     hostLoadPending.read(line)
                     // The view updates once per reading, at its end.
-                    if line == "@end" { hostLoad = hostLoadPending }
+                    if line == "@end" {
+                        hostLoad = hostLoadPending
+                        if let busy = DockerdWatch.busy(hostLoad.dockerdCPU) { notifier.dockerBusy(busy) }
+                    }
                 }
             } catch {}
             try? await Task.sleep(for: .seconds(5))
@@ -526,10 +529,18 @@ final class AppModel {
     }
 
     private func record(_ event: DockerEvent) {
+        let problem = stopTracker.isProblem(event)
         guard event.isNotable else { return }
         recentEvents.insert(event, at: 0)
         if recentEvents.count > 300 { recentEvents.removeLast(recentEvents.count - 300) }
-        notifier.event(event, recent: recentEvents)
+        notifier.event(event, problem: problem, recent: recentEvents)
+    }
+    @ObservationIgnored private var stopTracker = StopTracker()
+
+    /// When Docker last started, if it was within the problem scan's hours.
+    var dockerRestarted: Date? {
+        guard let uptime = hostLoad.dockerdUptime, uptime < TimeInterval(ProblemSummary.hours * 3600) else { return nil }
+        return Date(timeIntervalSinceNow: -uptime)
     }
 
     // MARK: Icons

@@ -18,6 +18,16 @@ const state = {
 };
 
 const $ = (id) => document.getElementById(id);
+
+/// "· 65 from Docker's restart at 18:27 not counted", when there are any.
+function restartNote() {
+  const noise = Object.values(state.problems.containers || {}).reduce((sum, p) => sum + (p.around_restart || 0), 0);
+  const started = state.problems.dockerd_started;
+  if (!noise || !started) return null;
+  const at = new Date(started * 1000).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return el("span", { class: "muted", title: "When Docker restarts, every container logs its shutdown and startup. Those lines stay in the logs but don't count as problems." },
+    `· ${noise} from Docker's restart at ${at} not counted`);
+}
 const el = (tag, attrs = {}, ...children) => {
   const node = document.createElement(tag);
   for (const [key, value] of Object.entries(attrs)) {
@@ -149,7 +159,11 @@ function renderOverview() {
 
   const tiles = el("div", { class: "tiles" },
     tile("CPU", load.cpu.length ? percent(last(load.cpu)) : "—", sparkline(load.cpu, 100),
-      el("span", { class: "muted" }, load.load.length ? `Load ${load.load.map((v) => v.toFixed(2)).join("  ")}` : "")),
+      load.dockerd_busy
+        ? el("span", { class: "busy", title: "dockerd has been this busy for 5 minutes. Stuck log readers can do this; restarting Docker clears them." },
+          `⚠ Docker at ${Math.round(load.dockerd_busy)}%`)
+        : el("span", { class: "muted", title: load.dockerd_cpu?.length ? `Docker itself: ${Math.round(last(load.dockerd_cpu))}% of one core` : "" },
+          load.load.length ? `Load ${load.load.map((v) => v.toFixed(2)).join("  ")}` : "")),
     tile("Memory", load.memory_used.length ? bytes(last(load.memory_used)) : "—", sparkline(load.memory_used, load.memory_total),
       el("span", { class: "muted" }, load.memory_total ? `of ${bytes(load.memory_total)}` : "")),
     tile("Containers", `${running} running`,
@@ -170,7 +184,8 @@ function renderOverview() {
   const scanned = state.problems.scanned ? new Date(state.problems.scanned * 1000) : null;
   const problemList = el("div", {},
     el("h2", {}, "Warnings and Errors, Last 24 Hours",
-      el("span", { class: "muted" }, scanned ? `Read ${scanned.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Reading…")),
+      el("span", { class: "muted" }, scanned ? `Read ${scanned.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}` : "Reading…"),
+      restartNote()),
     el("div", { class: "list" }, problems.length ? problems.map(([name, p]) => el("a", { class: "row", href: `#/c/${encodeURIComponent(name)}/problems` },
       byName[name] ? icon(byName[name]) : el("span", { class: "glyph" }),
       el("span", { class: "name" }, el("span", {}, name),

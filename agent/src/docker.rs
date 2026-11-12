@@ -33,8 +33,36 @@ pub struct Container {
 pub struct Problems {
     pub warnings: usize,
     pub errors: usize,
+    /// Logged around Docker's last restart: not counted above.
+    pub around_restart: usize,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub latest: Option<parse::Line>,
+}
+
+/// When Docker restarts, every container logs its shutdown and startup: lines
+/// from 5 minutes before dockerd started to 3 minutes after are noise. Like the Mac app.
+pub fn around_restart(time: Option<&str>, started: Option<u64>) -> bool {
+    let (Some(time), Some(started)) = (time, started) else { return false };
+    let Some(at) = unix_seconds(time) else { return false };
+    let started = started as i64;
+    (started - 300..=started + 180).contains(&at)
+}
+
+/// "2026-11-11T23:27:08.123456789Z" → Unix seconds.
+pub fn unix_seconds(time: &str) -> Option<i64> {
+    let b = time.as_bytes();
+    if b.len() < 19 || b[4] != b'-' || b[10] != b'T' {
+        return None;
+    }
+    let n = |r: std::ops::Range<usize>| time.get(r)?.parse::<i64>().ok();
+    let (y, m, d) = (n(0..4)?, n(5..7)?, n(8..10)?);
+    // Days from the civil date (Howard Hinnant's algorithm).
+    let y = if m <= 2 { y - 1 } else { y };
+    let era = y.div_euclid(400);
+    let yoe = y - era * 400;
+    let doy = (153 * (if m > 2 { m - 3 } else { m + 9 }) + 2) / 5 + d - 1;
+    let days = era * 146_097 + yoe * 365 + yoe / 4 - yoe / 100 + doy - 719_468;
+    Some(days * 86_400 + n(11..13)? * 3600 + n(14..16)? * 60 + n(17..19)?)
 }
 
 #[derive(Debug, Clone, Default, Serialize)]
@@ -42,6 +70,9 @@ pub struct ProblemScan {
     /// Unix seconds of the scan, 0 before the first.
     pub scanned: u64,
     pub hours: u64,
+    /// Unix seconds when dockerd started, as the scan saw it.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub dockerd_started: Option<u64>,
     pub containers: BTreeMap<String, Problems>,
 }
 
@@ -168,7 +199,7 @@ impl Docker {
     }
 
     /// Every container's warnings and errors of the last day.
-    pub async fn scan_problems(&self) -> ProblemScan {
+    pub async fn scan_problems(&self, dockerd_started: Option<u64>) -> ProblemScan {
         const HOURS: u64 = 24;
         const MAX_LINES: usize = 20_000;
         let now = std::time::SystemTime::now()
@@ -178,6 +209,7 @@ impl Docker {
         let mut scan = ProblemScan {
             scanned: now,
             hours: HOURS,
+            dockerd_started,
             containers: BTreeMap::new(),
         };
         let Ok(containers) = self.containers().await else {
@@ -200,6 +232,10 @@ impl Docker {
                     if !line.level.is_problem() {
                         continue;
                     }
+                    if around_restart(line.time.as_deref(), dockerd_started) {
+                        problems.around_restart += 1;
+                        continue;
+                    }
                     if line.level == Level::Warning {
                         problems.warnings += 1
                     } else {
@@ -217,6 +253,17 @@ impl Docker {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn lines_around_a_restart_are_noise() {
+        assert_eq!(unix_seconds("2026-11-11T23:26:57.5Z"), Some(1_794_439_617));
+        assert_eq!(unix_seconds("1970-01-01T00:00:00Z"), Some(0));
+        let started = Some(1_794_439_617);
+        assert!(around_restart(Some("2026-11-11T23:24:13.000Z"), started));
+        assert!(around_restart(Some("2026-11-11T23:27:08.000Z"), started));
+        assert!(!around_restart(Some("2026-11-11T23:40:00.000Z"), started));
+        assert!(!around_restart(Some("2026-11-11T23:27:08.000Z"), None));
+    }
 
     #[test]
     fn health_comes_from_the_status() {

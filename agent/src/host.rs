@@ -15,11 +15,43 @@ pub struct Load {
     /// 1, 5 and 15 minute averages.
     pub load: Vec<f64>,
     pub uptime: f64,
+    /// Docker's own CPU, in percent of one core (500 is five cores busy).
+    pub dockerd_cpu: Vec<f64>,
+    /// Unix seconds when dockerd started.
+    pub dockerd_started: Option<u64>,
+    /// The average when dockerd has been busy for five minutes (see `busy`).
+    pub dockerd_busy: Option<f64>,
+}
+
+/// Busy means above this, in percent of one core, on average…
+pub const BUSY_THRESHOLD: f64 = 150.0;
+/// …over this many readings (two seconds apart: five minutes). Like the Mac app's DockerdWatch.
+pub const BUSY_WINDOW: usize = 150;
+
+pub fn busy(cpu: &[f64]) -> Option<f64> {
+    if cpu.len() < BUSY_WINDOW {
+        return None;
+    }
+    let average = cpu[cpu.len() - BUSY_WINDOW..].iter().sum::<f64>() / BUSY_WINDOW as f64;
+    (average > BUSY_THRESHOLD).then_some(average)
+}
+
+/// Clock ticks per second in /proc (USER_HZ, 100 on Linux).
+const TICKS: f64 = 100.0;
+
+/// (utime + stime, start) in ticks from /proc/<pid>/stat.
+pub fn process_ticks(stat: &str) -> Option<(f64, f64)> {
+    // The name is in parentheses and may hold spaces: count fields after it.
+    let fields: Vec<&str> = stat.get(stat.rfind(')')? + 1..)?.split_whitespace().collect();
+    let field = |n: usize| -> Option<f64> { fields.get(n - 3)?.parse().ok() };
+    Some((field(14)? + field(15)?, field(22)?))
 }
 
 pub struct Sampler {
     root: PathBuf,
     last: Option<(f64, f64)>,
+    dockerd: Option<u32>,
+    last_dockerd: Option<(f64, f64)>,
     capacity: usize,
     pub load: Load,
 }
@@ -29,6 +61,8 @@ impl Sampler {
         Sampler {
             root,
             last: None,
+            dockerd: None,
+            last_dockerd: None,
             capacity: 90,
             load: Load::default(),
         }
@@ -67,6 +101,46 @@ impl Sampler {
             .next()
             .and_then(|v| v.parse().ok())
             .unwrap_or(0.0);
+        self.sample_dockerd();
+    }
+
+    fn find_dockerd(&self) -> Option<u32> {
+        std::fs::read_dir(&self.root).ok()?.flatten().find_map(|entry| {
+            let pid: u32 = entry.file_name().to_str()?.parse().ok()?;
+            (self.read(&format!("{pid}/comm")).trim() == "dockerd").then_some(pid)
+        })
+    }
+
+    fn sample_dockerd(&mut self) {
+        let uptime = self.load.uptime;
+        let mut ticks = self.dockerd.and_then(|pid| process_ticks(&self.read(&format!("{pid}/stat"))));
+        if ticks.is_none() {
+            // First reading, or Docker restarted with a new pid.
+            self.dockerd = self.find_dockerd();
+            self.last_dockerd = None;
+            ticks = self.dockerd.and_then(|pid| process_ticks(&self.read(&format!("{pid}/stat"))));
+        }
+        let Some((ticks, start)) = ticks else { return };
+        if uptime <= 0.0 {
+            return;
+        }
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_secs_f64())
+            .unwrap_or(0.0);
+        self.load.dockerd_started = Some((now - (uptime - start / TICKS)).max(0.0) as u64);
+        if let Some((last_ticks, last_uptime)) = self.last_dockerd
+            && ticks >= last_ticks
+            && uptime > last_uptime
+        {
+            push(
+                &mut self.load.dockerd_cpu,
+                100.0 * (ticks - last_ticks) / TICKS / (uptime - last_uptime),
+                self.capacity.max(BUSY_WINDOW),
+            );
+        }
+        self.last_dockerd = Some((ticks, uptime));
+        self.load.dockerd_busy = busy(&self.load.dockerd_cpu);
     }
 }
 
@@ -112,6 +186,17 @@ pub fn memory(meminfo: &str) -> Option<(f64, f64)> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn reads_dockerd_ticks_and_busy() {
+        let stat = "11766 (dockerd) S 1 11766 11766 0 -1 4194560 1 0 0 0 9469 11922 0 0 20 0 60 0 10018993 5815068";
+        assert_eq!(process_ticks(stat), Some((21391.0, 10018993.0)));
+        assert_eq!(busy(&[500.0; 100]), None);
+        assert_eq!(busy(&[507.0; 150]), Some(507.0));
+        let mut spike = vec![2.0; 140];
+        spike.extend([900.0; 10]);
+        assert_eq!(busy(&spike), None);
+    }
 
     #[test]
     fn reads_cpu_and_memory() {

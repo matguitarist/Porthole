@@ -277,3 +277,28 @@ public struct DockerEvent: Sendable, Equatable {
             || action.hasPrefix("health_status")
     }
 }
+
+/// Tells a crash from a stop someone asked for. `docker stop`, `docker restart`
+/// and Docker shutting down all send a "kill" event before "die"; a crash
+/// doesn't. So a die soon after a kill is a stop, whatever its exit code
+/// (137 when the container ignored the signal and was killed).
+public struct StopTracker: Sendable {
+    public static let window: TimeInterval = 60
+    private var kills: [String: Date] = [:]
+
+    public init() {}
+
+    /// Reads one event; true when it is a crash, out of memory or unhealthy.
+    public mutating func isProblem(_ event: DockerEvent) -> Bool {
+        switch event.action {
+        case "kill":
+            kills[event.name] = event.date
+            return false
+        case "die":
+            if let kill = kills.removeValue(forKey: event.name), event.date.timeIntervalSince(kill) < Self.window { return false }
+            return event.isProblem
+        default:
+            return event.isProblem
+        }
+    }
+}

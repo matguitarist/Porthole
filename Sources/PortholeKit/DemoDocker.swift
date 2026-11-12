@@ -133,7 +133,8 @@ public actor DemoDocker: DockerClient {
                     continuation.yield("@cpu cpu \(Int(busy)) 0 0 \(Int(total - busy)) 0 0 0 0")
                     continuation.yield("@mem 32768000 \(Int(19_000_000 + 600_000 * sin(Double(round) / 6)))")
                     continuation.yield("@load 1.12 0.98 0.87 2/812 1234")
-                    continuation.yield("@up 523800")
+                    continuation.yield("@up \(523_800 + 2 * round)")
+                    continuation.yield("@dockerd 100 \(9_000 + 7 * round) \(3_000 + 2 * round) \((523_800 - 7_200) * 100)")
                     continuation.yield("@end")
                     round += 1
                     try? await Task.sleep(for: round < 60 ? .milliseconds(10) : .seconds(2))
@@ -143,11 +144,18 @@ public actor DemoDocker: DockerClient {
         }
     }
 
+    /// Docker restarted two hours ago: crowdsec logged its shutdown and startup.
+    var dockerStarted: Date { now.addingTimeInterval(-2 * 3600) }
+
     public func problems(ignoring rules: IgnoreRules) async throws -> [String: ProblemSummary] {
-        var output = ""
+        var output = "@@started \(Int(dockerStarted.timeIntervalSince1970))\n"
         for container in list {
             output += "@@@ \(container.name)\n"
             if cleared.contains(container.name) { continue }
+            if container.name == "crowdsec" {
+                output += "\(Self.iso(dockerStarted.addingTimeInterval(-20))) time=\"x\" level=warning msg=\"SIGTERM received, shutting down\"\n"
+                output += "\(Self.iso(dockerStarted.addingTimeInterval(8))) time=\"x\" level=error msg=\"Machine is not enrolled in the console\"\n"
+            }
             output += Self.sampleLines(for: container.name, now: now).joined(separator: "\n") + "\n"
         }
         return ProblemSummary.parse(output, ignoring: rules)

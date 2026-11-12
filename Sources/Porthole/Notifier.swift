@@ -32,9 +32,10 @@ final class Notifier {
     }
 
     /// A container event: crashes, out of memory, unhealthy, a restart loop.
-    func event(_ event: DockerEvent, recent: [DockerEvent]) {
+    /// `problem`: a crash, out of memory or unhealthy, not a stop someone asked for (`StopTracker`).
+    func event(_ event: DockerEvent, problem: Bool, recent: [DockerEvent]) {
         guard crashesOn else { return }
-        if event.isProblem {
+        if problem {
             let title = event.action == "health_status: unhealthy" ? String(localized: "\(event.name) is unhealthy")
                 : event.action == "oom" ? String(localized: "\(event.name) ran out of memory")
                 : String(localized: "\(event.name) crashed")
@@ -59,7 +60,16 @@ final class Notifier {
         }
     }
 
-    private func send(key: String, title: String, body: String, container: String) {
+    /// dockerd itself has been busy for minutes (`DockerdWatch`).
+    func dockerBusy(_ percent: Double) {
+        guard crashesOn else { return }
+        send(key: "dockerd|busy", title: String(localized: "Docker is busy"),
+             body: String(localized: "dockerd has used \(Int(percent.rounded()))% CPU for 5 minutes. Stuck log readers can do this; restarting Docker clears them."),
+             container: nil)
+    }
+
+    /// `container`: the one a click opens; nil opens the overview.
+    private func send(key: String, title: String, body: String, container: String?) {
         if let last = lastSent[key], Date().timeIntervalSince(last) < Self.quietTime { return }
         lastSent[key] = Date()
         sent.append((title, body))
@@ -69,8 +79,8 @@ final class Notifier {
         content.title = title
         content.body = String(body.prefix(240))
         content.sound = .default
-        content.userInfo = ["container": container]
-        content.threadIdentifier = container
+        if let container { content.userInfo = ["container": container] }
+        content.threadIdentifier = container ?? "docker"
         UNUserNotificationCenter.current().add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
 
         if UserDefaults.standard.bool(forKey: Keys.gotify), let token = Keychain.gotifyToken, !token.isEmpty,

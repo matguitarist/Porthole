@@ -75,10 +75,13 @@ async fn main() {
         }
     });
     // Warnings and errors of the last day, every five minutes.
-    let (scan_docker, problems) = (app.docker.clone(), app.problems.clone());
+    let (scan_docker, problems, scan_load) = (app.docker.clone(), app.problems.clone(), app.load.clone());
     tokio::spawn(async move {
+        // The first host reading, so the scan knows when Docker started.
+        tokio::time::sleep(Duration::from_secs(3)).await;
         loop {
-            let scan = scan_docker.scan_problems().await;
+            let started = scan_load.read().await.dockerd_started;
+            let scan = scan_docker.scan_problems(started).await;
             *problems.write().await = scan;
             tokio::time::sleep(Duration::from_secs(300)).await;
         }

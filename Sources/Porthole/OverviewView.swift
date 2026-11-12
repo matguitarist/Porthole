@@ -81,10 +81,15 @@ struct ServerTiles: View {
             Tile(title: "CPU", symbol: "cpu") {
                 BigNumber(load.cpu.last.map(Format.percent) ?? "—")
                 Sparkline(values: load.cpu).frame(height: 28)
-                Text(load.load.isEmpty ? " " : "Load \(load.load.map { String(format: "%.2f", $0) }.joined(separator: "  "))")
-                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                if let busy = DockerdWatch.busy(load.dockerdCPU) {
+                    Label("Docker at \(Int(busy.rounded()))%", systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption.monospacedDigit()).foregroundStyle(.orange)
+                } else {
+                    Text(load.load.isEmpty ? " " : "Load \(load.load.map { String(format: "%.2f", $0) }.joined(separator: "  "))")
+                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                }
             }
-            .help("CPU over the last \(Format.window(load.cpu.count)), all \(model.hostInfo?.cores ?? 1) cores together. Load is the 1, 5 and 15 minute average.")
+            .help(cpuHelp(load))
             Tile(title: "Memory", symbol: "memorychip") {
                 BigNumber(load.memoryUsed.last.map(Format.bytes) ?? "—")
                 Sparkline(values: load.memoryUsed).frame(height: 28)
@@ -110,6 +115,14 @@ struct ServerTiles: View {
                 Text(load.uptime > 0 ? "Since \(Date(timeIntervalSinceNow: -load.uptime).formatted(date: .abbreviated, time: .shortened))" : " ")
                     .font(.caption).foregroundStyle(.secondary)
             }
+    }
+}
+
+extension ServerTiles {
+    func cpuHelp(_ load: HostLoad) -> String {
+        let all = String(localized: "CPU over the last \(Format.window(load.cpu.count)), all \(model.hostInfo?.cores ?? 1) cores together. Load is the 1, 5 and 15 minute average.")
+        guard let docker = load.dockerdCPU.last else { return all }
+        return all + " " + String(localized: "Docker itself: \(Int(docker.rounded()))% of one core.")
     }
 }
 
@@ -202,6 +215,12 @@ struct ProblemList: View {
                 } else if let scanned = model.problemsScanned {
                     Text("Read \(scanned.formatted(date: .omitted, time: .shortened))")
                         .font(.caption).foregroundStyle(.secondary)
+                }
+                let noise = model.problems.values.reduce(0) { $0 + $1.aroundRestart }
+                if noise > 0, let restarted = model.dockerRestarted {
+                    Text("· \(noise) from Docker's restart at \(restarted.formatted(date: .omitted, time: .shortened)) not counted")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .help("When Docker restarts, every container logs its shutdown and startup. Those lines stay in the logs but don't count as problems or send alerts.")
                 }
             }
             let rows = model.containersWithProblems

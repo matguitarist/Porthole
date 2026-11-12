@@ -134,8 +134,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
         let name = response.notification.request.content.userInfo["container"] as? String
         await MainActor.run {
-            guard let model = AppModel.current, let name else { return }
-            model.open(name, problemsOnly: true)
+            guard let model = AppModel.current else { return }
+            if let name { model.open(name, problemsOnly: true) } else { model.page = .overview }
             NSApp.activate()
             NSApp.windows.first { $0.identifier?.rawValue.hasPrefix("main") == true }?.makeKeyAndOrderFront(nil)
         }

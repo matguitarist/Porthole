@@ -108,10 +108,15 @@ enum SelfTest {
             await model.clearLogs(["tautulli"])
             check("clearing a log removes its problems", model.problems["tautulli"]?.total == 0 && (model.problems["seerr"]?.total ?? 0) > 0)
 
+            check("lines from Docker's restart don't count as problems",
+                  model.problems["crowdsec"]?.aroundRestart == 2 && model.problems["crowdsec"]?.errors == 0
+                  && model.dockerRestarted.map { abs($0.timeIntervalSinceNow + 7_200) < 120 } == true,
+                  "\(model.problems["crowdsec"].map { "\($0.aroundRestart) \($0.errors)" } ?? "nil") \(String(describing: model.dockerRestarted))")
+
             // Alerts: a crash notifies, the same one again stays quiet for a while.
             let sentBefore = model.notifier.sent.count
-            model.notifier.event(DockerEvent(action: "die", name: "seerr", date: Date(), exitCode: 1), recent: [])
-            model.notifier.event(DockerEvent(action: "die", name: "seerr", date: Date(), exitCode: 1), recent: [])
+            model.notifier.event(DockerEvent(action: "die", name: "seerr", date: Date(), exitCode: 1), problem: true, recent: [])
+            model.notifier.event(DockerEvent(action: "die", name: "seerr", date: Date(), exitCode: 1), problem: true, recent: [])
             check("a crash sends one alert, not two", model.notifier.sent.count == sentBefore + 1
                   && model.notifier.sent.last?.title == "seerr crashed")
 

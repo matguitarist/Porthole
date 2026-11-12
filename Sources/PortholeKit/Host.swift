@@ -69,25 +69,32 @@ public struct HostInfo: Sendable, Equatable {
 
 /// The server's load, streamed every two seconds:
 /// "@cpu cpu 1 2 3 …" (from /proc/stat), "@mem <total kB> <available kB>",
-/// "@load 0.52 0.61 0.70 …", "@up <seconds>", then "@end".
+/// "@load 0.52 0.61 0.70 …", "@up <seconds>",
+/// "@dockerd <ticks per second> <utime> <stime> <start ticks>" (from /proc/<pid>/stat), then "@end".
 public struct HostLoad: Sendable, Equatable {
     public var cpu: [Double] = []
     public var memoryUsed: [Double] = []
     public var memoryTotal: Double = 0
     public var load: [Double] = []
     public var uptime: TimeInterval = 0
+    /// Docker's own CPU, in percent of one core (500 is five cores busy).
+    public var dockerdCPU: [Double] = []
+    /// How long dockerd has run, in seconds; nil until known.
+    public var dockerdUptime: TimeInterval?
     let capacity: Int
     private var lastTicks: (busy: Double, total: Double)?
+    private var lastDockerd: (ticks: Double, uptime: Double)?
 
     public init(capacity: Int = 90) { self.capacity = capacity }
 
     public static let command = #"""
-    while :; do echo "@cpu $(head -1 /proc/stat)"; echo "@mem $(awk '/^MemTotal:/{t=$2} /^MemAvailable:/{a=$2} END{print t, a}' /proc/meminfo)"; echo "@load $(cat /proc/loadavg)"; echo "@up $(cut -d' ' -f1 /proc/uptime)"; echo "@end"; sleep 2; done
+    tck=$(getconf CLK_TCK); while :; do echo "@cpu $(head -1 /proc/stat)"; echo "@mem $(awk '/^MemTotal:/{t=$2} /^MemAvailable:/{a=$2} END{print t, a}' /proc/meminfo)"; echo "@load $(cat /proc/loadavg)"; echo "@up $(cut -d' ' -f1 /proc/uptime)"; p=$(pidof dockerd | cut -d' ' -f1); [ -n "$p" ] && echo "@dockerd $tck $(cut -d' ' -f14,15,22 /proc/$p/stat)"; echo "@end"; sleep 2; done
     """#
 
     public static func == (lhs: HostLoad, rhs: HostLoad) -> Bool {
         lhs.cpu == rhs.cpu && lhs.memoryUsed == rhs.memoryUsed && lhs.memoryTotal == rhs.memoryTotal
             && lhs.load == rhs.load && lhs.uptime == rhs.uptime
+            && lhs.dockerdCPU == rhs.dockerdCPU && lhs.dockerdUptime == rhs.dockerdUptime
     }
 
     /// Reads one line; CPU % comes from the change since the previous "@cpu".
@@ -115,6 +122,17 @@ public struct HostLoad: Sendable, Equatable {
             load = parts.dropFirst().prefix(3).compactMap { Double($0) }
         case "@up":
             uptime = Double(parts.dropFirst().first ?? "") ?? 0
+        case "@dockerd" where parts.count >= 5:
+            // Comes after "@up", so `uptime` is this reading's.
+            guard let perSecond = Double(parts[1]), perSecond > 0, let user = Double(parts[2]),
+                  let system = Double(parts[3]), let start = Double(parts[4]), uptime > 0 else { return }
+            let ticks = user + system
+            dockerdUptime = max(0, uptime - start / perSecond)
+            // Fewer ticks than before: a new dockerd; start over.
+            if let last = lastDockerd, ticks >= last.ticks, uptime > last.uptime {
+                dockerdCPU = Self.appending(dockerdCPU, 100 * (ticks - last.ticks) / perSecond / (uptime - last.uptime), capacity: capacity)
+            }
+            lastDockerd = (ticks, uptime)
         default: break
         }
     }
@@ -124,5 +142,20 @@ public struct HostLoad: Sendable, Equatable {
         values.append(value)
         if values.count > capacity { values.removeFirst(values.count - capacity) }
         return values
+    }
+}
+
+/// When Docker itself is the problem: dockerd busy while the containers aren't.
+public enum DockerdWatch {
+    /// Busy means above this, in percent of one core, on average…
+    public static let threshold: Double = 150
+    /// …over this many readings (two seconds apart: five minutes).
+    public static let window = 150
+
+    /// The average over the window when it is above the threshold, else nil.
+    public static func busy(_ cpu: [Double]) -> Double? {
+        guard cpu.count >= window else { return nil }
+        let average = cpu.suffix(window).reduce(0, +) / Double(window)
+        return average > threshold ? average : nil
     }
 }

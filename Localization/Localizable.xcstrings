@@ -853,12 +853,42 @@
         }
       }
     },
+    "Docker at %lld%%": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker à %lld %%"
+          }
+        }
+      }
+    },
     "Docker couldn't start it (a bad option or setting).": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Docker n’a pas pu le démarrer (une option ou un réglage incorrect)."
+          }
+        }
+      }
+    },
+    "Docker is busy": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker est surchargé"
+          }
+        }
+      }
+    },
+    "Docker itself: %lld%% of one core.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker lui-même : %lld %% d’un cœur."
           }
         }
       }
@@ -2375,6 +2405,16 @@
         }
       }
     },
+    "When Docker restarts, every container logs its shutdown and startup. Those lines stay in the logs but don't count as problems or send alerts.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quand Docker redémarre, chaque conteneur journalise son arrêt et son démarrage. Ces lignes restent dans les journaux mais ne comptent pas comme problèmes et n’envoient pas d’alerte."
+          }
+        }
+      }
+    },
     "With the menu bar icon on, Porthole keeps watching after you close its window.": {
       "localizations": {
         "fr": {
@@ -2391,6 +2431,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "les %lld conteneurs"
+          }
+        }
+      }
+    },
+    "dockerd has used %lld%% CPU for 5 minutes. Stuck log readers can do this; restarting Docker clears them.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "dockerd utilise %lld %% du processeur depuis 5 minutes. Des lectures de journaux bloquées peuvent en être la cause ; redémarrer Docker les libère."
           }
         }
       }
@@ -2465,6 +2515,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "utilisateur@hôte, ou un Host de ~/.ssh/config. Porthole y exécute la commande docker."
+          }
+        }
+      }
+    },
+    "· %lld from Docker's restart at %@ not counted": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "· %lld du redémarrage de Docker à %@ non comptés"
           }
         }
       }

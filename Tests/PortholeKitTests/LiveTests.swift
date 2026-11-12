@@ -30,4 +30,29 @@ struct LiveTests {
         try await Task.sleep(for: .seconds(2))
         #expect(try await docker.command(count).trimmingCharacters(in: .whitespacesAndNewlines) == "0")
     }
+
+    @Test("The host load reads dockerd's CPU and start")
+    func dockerd() async throws {
+        let docker = SSHDocker(target: "root@192.168.40.210", identityFile: "~/.ssh/id_ed25519_homeserver")
+        var load = HostLoad()
+        var ends = 0
+        for try await line in docker.hostLoad() {
+            load.read(line)
+            if line == "@end" { ends += 1 }
+            if ends >= 2 { break }
+        }
+        print("DOCKERD", load.dockerdCPU, load.dockerdUptime ?? -1)
+        #expect(load.dockerdCPU.count == 1)
+        #expect((load.dockerdUptime ?? 0) > 0)
+    }
+
+    @Test("The problem scan knows when Docker started")
+    func problemScan() async throws {
+        let docker = SSHDocker(target: "root@192.168.40.210", identityFile: "~/.ssh/id_ed25519_homeserver")
+        let output = try await docker.command(ProblemSummary.command)
+        let started = ProblemSummary.dockerStarted(output)
+        let noise = ProblemSummary.parse(output).values.reduce(0) { $0 + $1.aroundRestart }
+        print("STARTED", started as Any, "AROUND RESTART", noise)
+        #expect(started != nil)
+    }
 }
