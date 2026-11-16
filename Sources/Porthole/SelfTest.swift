@@ -30,7 +30,10 @@ enum SelfTest {
             check("opens on the overview", model.page == .overview)
             for _ in 0..<50 where model.problemsScanned == nil || model.hostLoad.cpu.isEmpty || model.hostInfo == nil { try? await Task.sleep(for: .milliseconds(100)) }
             check("the overview shows the server's load", !model.hostLoad.cpu.isEmpty && model.hostLoad.memoryTotal > 0)
-            check("and its disks", model.hostInfo?.disks.count == 3)
+            check("and its disks, Docker's too", model.hostInfo?.disks.count == 4 && model.hostInfo?.disks.last?.isDocker == true)
+            for _ in 0..<50 where model.dockerDisk == nil { try? await Task.sleep(for: .milliseconds(100)) }
+            check("shows what fills Docker's space", model.dockerDisk?.usage.count == 4 && (model.dockerDisk?.reclaimable ?? 0) > 2e9)
+            check("lists the biggest logs, largest first", model.dockerDisk?.biggestLogs(5).map(\.name).prefix(2) == ["syncthing", "mangosd"])
             check("scans every container's log for problems", model.problems.count == 7)
             let byHour = model.problemsByHour
             check("counts warnings and errors per hour over the day",

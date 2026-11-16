@@ -63,6 +63,16 @@
         }
       }
     },
+    "%@ in all": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ en tout"
+          }
+        }
+      }
+    },
     "%@ is unhealthy": {
       "localizations": {
         "fr": {
@@ -105,6 +115,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ a manqué de mémoire"
+          }
+        }
+      }
+    },
+    "%@ unused": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ inutilisés"
+          }
+        }
+      }
+    },
+    "%@'s log file on the server. Control-click to clear it.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le fichier journal de %@ sur le serveur. Clic avec Contrôle pour le vider."
           }
         }
       }
@@ -157,6 +187,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ : 1 nouvelle erreur"
+          }
+        }
+      }
+    },
+    "%lld": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld"
           }
         }
       }
@@ -571,6 +611,26 @@
         }
       }
     },
+    "Biggest Logs": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus gros journaux"
+          }
+        }
+      }
+    },
+    "Build cache": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cache de build"
+          }
+        }
+      }
+    },
     "Busiest Now": {
       "localizations": {
         "fr": {
@@ -863,6 +923,16 @@
         }
       }
     },
+    "Docker": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker"
+          }
+        }
+      }
+    },
     "Docker Server": {
       "localizations": {
         "fr": {
@@ -939,6 +1009,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Docker le redémarre chaque fois qu’il s’arrête (%lld redémarrages jusqu’ici). Les messages juste avant chaque démarrage disent souvent pourquoi."
+          }
+        }
+      }
+    },
+    "Docker says nothing uses this and it could be removed": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker indique que rien ne l’utilise et qu’on pourrait le supprimer"
+          }
+        }
+      }
+    },
+    "Docker's Space": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espace de Docker"
           }
         }
       }
@@ -1249,6 +1339,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Les lignes ignorées restent dans le journal, comme lignes de débogage, mais ne comptent jamais comme avertissements ou erreurs et n’envoient pas d’alertes."
+          }
+        }
+      }
+    },
+    "Images": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Images"
           }
         }
       }
@@ -2461,6 +2561,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Version %@"
+          }
+        }
+      }
+    },
+    "Volumes": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volumes"
           }
         }
       }

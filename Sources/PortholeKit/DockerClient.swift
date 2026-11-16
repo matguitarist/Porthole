@@ -45,6 +45,8 @@ public protocol DockerClient: Sendable {
     /// A file on the server (an icon).
     func serverFile(_ path: String) async throws -> Data
     func hostInfo() async throws -> HostInfo
+    /// What fills Docker's space, and each container's log size.
+    func dockerDisk() async throws -> DockerDisk
     /// HostLoad lines every two seconds.
     func hostLoad() -> AsyncThrowingStream<String, Error>
     /// Warnings and errors per container over the last day, without ignored messages.
@@ -213,6 +215,10 @@ public actor SSHDocker: DockerClient {
 
     public func hostInfo() async throws -> HostInfo {
         HostInfo.parse(try await command(HostInfo.command))
+    }
+
+    public func dockerDisk() async throws -> DockerDisk {
+        DockerDisk.parse(try await command(DockerDisk.command))
     }
 
     public nonisolated func hostLoad() -> AsyncThrowingStream<String, Error> {

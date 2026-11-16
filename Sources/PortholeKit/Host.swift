@@ -6,14 +6,21 @@ public struct HostInfo: Sendable, Equatable {
         public var mount: String
         public var size: Double
         public var used: Double
+        /// df's first column: "/dev/loop2", "shfs".
+        public var filesystem: String
         public var id: String { mount }
         public var fraction: Double { size > 0 ? used / size : 0 }
 
-        public init(mount: String, size: Double, used: Double) {
+        public init(mount: String, size: Double, used: Double, filesystem: String = "") {
             self.mount = mount
             self.size = size
             self.used = used
+            self.filesystem = filesystem
         }
+
+        /// Docker's own space: docker.img on Unraid, or the disk of the directory Docker runs from.
+        public static let dockerMount = "/var/lib/docker"
+        public var isDocker: Bool { mount == Self.dockerMount }
 
         /// "Array", "Cache", "Flash" for Unraid's mounts.
         public var title: String {
@@ -21,6 +28,7 @@ public struct HostInfo: Sendable, Equatable {
             case "/mnt/user": String(localized: "Array", bundle: .main)
             case "/mnt/cache": String(localized: "Cache", bundle: .main)
             case "/boot": String(localized: "Flash", bundle: .main)
+            case Self.dockerMount: String(localized: "Docker", bundle: .main)
             default: mount
             }
         }
@@ -39,7 +47,7 @@ public struct HostInfo: Sendable, Equatable {
     }
 
     public static let command = #"""
-    echo "@host $(hostname)"; echo "@cores $(nproc)"; echo "@version $(sed -n 's/^version="\(.*\)"/\1/p' /etc/unraid-version 2>/dev/null)"; df -B1 -P /mnt/user /mnt/cache /boot 2>/dev/null | tail -n +2 | awk '{print "@disk", $6, $2, $3}'
+    echo "@host $(hostname)"; echo "@cores $(nproc)"; echo "@version $(sed -n 's/^version="\(.*\)"/\1/p' /etc/unraid-version 2>/dev/null)"; df -B1 -P /mnt/user /mnt/cache /boot /var/lib/docker 2>/dev/null | tail -n +2 | awk '{print "@disk", $6, $2, $3, $1}'
     """#
 
     public static func parse(_ output: String) -> HostInfo {
@@ -51,9 +59,13 @@ public struct HostInfo: Sendable, Equatable {
             case "@host": info.hostname = parts.dropFirst().joined(separator: " ")
             case "@cores": info.cores = Int(parts.dropFirst().first ?? "") ?? 1
             case "@version": info.version = parts.dropFirst().joined(separator: " ")
-            case "@disk" where parts.count == 4:
-                guard !info.disks.contains(where: { $0.mount == parts[1] }) else { continue }
-                info.disks.append(Disk(mount: String(parts[1]), size: Double(parts[2]) ?? 0, used: Double(parts[3]) ?? 0))
+            case "@disk" where parts.count >= 4:
+                let disk = Disk(mount: String(parts[1]), size: Double(parts[2]) ?? 0, used: Double(parts[3]) ?? 0,
+                                filesystem: parts.count > 4 ? String(parts[4]) : "")
+                guard !info.disks.contains(where: { $0.mount == disk.mount }) else { continue }
+                // Docker in a directory on the cache: the cache's own tile says it already.
+                if disk.isDocker, !disk.filesystem.isEmpty, info.disks.contains(where: { $0.filesystem == disk.filesystem }) { continue }
+                info.disks.append(disk)
             default: break
             }
         }

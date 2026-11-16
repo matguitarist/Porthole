@@ -139,7 +139,8 @@ Screens: overview
 Acceptance:
 - [unit] `docker system df` and log sizes parse; docker.img shows as its own disk, a directory on the cache doesn't repeat the cache.
 - [self] The sample shows Docker's space and the biggest logs, largest first.
-Status: todo
+Built: Docker's tile comes from `df /var/lib/docker`; it is left out when that is the same filesystem as another disk (a directory on the cache). `docker system df` runs every ten minutes and after clearing logs.
+Status: done
 
 ### S-018 Unraid array and disks
 As the user, I see the array's state, a parity check in progress or the last one's result, and each disk's temperature and errors; a missing, disabled, failing, or hot disk goes in Needs a Look. Empty slots don't count.

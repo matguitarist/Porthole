@@ -19,12 +19,14 @@ struct OverviewView: View {
                             VStack(alignment: .leading, spacing: Space.xxl) {
                                 AttentionSection()
                                 ProblemList()
+                                BusiestList()
+                                BiggestLogs()
                             }
                             .frame(maxWidth: .infinity)
                             VStack(alignment: .leading, spacing: Space.xxl) {
-                                StorageSection(columns: 1)
+                                StorageSection(columns: 2)
+                                DockerSpace()
                                 EventList()
-                                BusiestList()
                             }
                             .frame(width: min(520, proxy.size.width * 0.36))
                         }
@@ -34,6 +36,8 @@ struct OverviewView: View {
                         ProblemList()
                         EventList()
                         BusiestList()
+                        BiggestLogs()
+                        DockerSpace()
                     }
                 }
                 .padding(Space.margin)
@@ -150,7 +154,7 @@ struct StorageTiles: View {
                       ?? [GridItem(.adaptive(minimum: 200), spacing: Space.md)], alignment: .leading, spacing: Space.md) {
                 ForEach(disks) { disk in
                     let full = disk.fraction >= 0.9
-                    Tile(title: LocalizedStringKey(disk.title), symbol: disk.mount == "/boot" ? "memorychip" : "internaldrive") {
+                    Tile(title: LocalizedStringKey(disk.title), symbol: disk.isDocker ? "shippingbox" : disk.mount == "/boot" ? "memorychip" : "internaldrive") {
                         HStack(alignment: .firstTextBaseline) {
                             BigNumber(String(format: "%.0f%%", disk.fraction * 100))
                             if full {
@@ -165,6 +169,42 @@ struct StorageTiles: View {
                             .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
                     }
                     .help("\(disk.mount): \(Format.disk(disk.size - disk.used)) free")
+                }
+            }
+        }
+    }
+}
+
+/// What fills Docker's space, and what Docker says could be freed.
+struct DockerSpace: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        if let disk = model.dockerDisk, !disk.usage.isEmpty {
+            VStack(alignment: .leading, spacing: Space.sm) {
+                HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
+                    SectionTitle("Docker's Space")
+                    Text("\(Format.disk(disk.total)) in all")
+                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                }
+                GroupBox {
+                    VStack(spacing: 0) {
+                        ForEach(Array(disk.usage.enumerated()), id: \.element.id) { index, usage in
+                            if index > 0 { Divider() }
+                            HStack(alignment: .firstTextBaseline, spacing: Space.md) {
+                                Text(usage.kind.title)
+                                Text("\(usage.count)").font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                                Spacer(minLength: Space.sm)
+                                if usage.reclaimable >= 1e6 {
+                                    Text("\(Format.disk(usage.reclaimable)) unused")
+                                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                                        .help("Docker says nothing uses this and it could be removed")
+                                }
+                                Text(Format.disk(usage.size)).monospacedDigit().frame(minWidth: 72, alignment: .trailing)
+                            }
+                            .padding(.vertical, Space.sm)
+                        }
+                    }
                 }
             }
         }
@@ -485,6 +525,38 @@ struct BusiestList: View {
                                     Text(Format.bytes(item.1.memory.last ?? 0)).foregroundStyle(.secondary).frame(width: 72, alignment: .trailing)
                                 }
                                 .font(.callout.monospacedDigit())
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// The biggest log files on the server: a row opens the log, its menu clears it.
+struct BiggestLogs: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        let biggest = (model.dockerDisk?.biggestLogs(5) ?? []).compactMap { log in
+            model.containers.first { $0.name == log.name }.map { ($0, log.bytes) }
+        }
+        if !biggest.isEmpty {
+            VStack(alignment: .leading, spacing: Space.sm) {
+                SectionTitle("Biggest Logs")
+                GroupBox {
+                    VStack(spacing: 0) {
+                        ForEach(Array(biggest.enumerated()), id: \.element.0.id) { index, item in
+                            if index > 0 { Divider() }
+                            OverviewRow(container: item.0, action: { model.open(item.0.name) }) {
+                                Text(Format.disk(item.1)).font(.callout.monospacedDigit())
+                            }
+                            .help("\(item.0.name)'s log file on the server. Control-click to clear it.")
+                            .contextMenu {
+                                Button("Show Whole Log") { model.open(item.0.name) }
+                                Divider()
+                                Button("Clear Log on Server…", systemImage: "trash") { model.requestClearLogs([item.0.name]) }
                             }
                         }
                     }

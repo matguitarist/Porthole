@@ -234,6 +234,8 @@ final class AppModel {
     // The overview
     private(set) var hostInfo: HostInfo?
     private(set) var hostLoad = HostLoad()
+    /// What fills Docker's space, and each container's log size.
+    private(set) var dockerDisk: DockerDisk?
     private(set) var problems: [String: ProblemSummary] = [:]
     private(set) var problemsScanned: Date?
     private(set) var scanningProblems = false
@@ -375,6 +377,7 @@ final class AppModel {
         hostLoad = HostLoad()
         hostLoadPending = HostLoad()
         hostInfo = nil
+        dockerDisk = nil
         problems = [:]
         iconImages = [:]
         iconRequests = []
@@ -395,10 +398,18 @@ final class AppModel {
             serverIcons = icons
             containers = containers.map(icons.withTemplateWebUI)
         }
+        var round = 0
         while !Task.isCancelled {
             if let info = try? await client.hostInfo() { hostInfo = info }
+            // `docker system df` takes a moment: every ten minutes.
+            if round % 10 == 0 { await loadDockerDisk() }
+            round += 1
             try? await Task.sleep(for: .seconds(60))
         }
+    }
+
+    func loadDockerDisk() async {
+        if let disk = try? await client.dockerDisk() { dockerDisk = disk }
     }
 
     private func watchHostLoad() async {
@@ -538,6 +549,7 @@ final class AppModel {
         }
         problemsScanned = nil   // no "new errors" notification for what was there before
         await scanProblems()
+        await loadDockerDisk()
     }
 
     // MARK: Events

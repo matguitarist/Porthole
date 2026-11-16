@@ -118,7 +118,20 @@ public actor DemoDocker: DockerClient {
             .init(mount: "/mnt/user", size: 2_000e9, used: 1_310e9),
             .init(mount: "/mnt/cache", size: 500e9, used: 321e9),
             .init(mount: "/boot", size: 31e9, used: 2.7e9),
+            .init(mount: "/var/lib/docker", size: 53.7e9, used: 39.4e9, filesystem: "/dev/loop2"),
         ])
+    }
+
+    public func dockerDisk() async throws -> DockerDisk {
+        var logs: [String: Double] = ["uptime-kuma": 412e6, "tautulli": 96e6, "syncthing": 1.8e9, "crowdsec": 23e6,
+                                      "seerr": 7.1e6, "mangosd": 640e6, "kometa": 0]
+        for name in cleared { logs[name] = 0 }
+        return DockerDisk(usage: [
+            .init(kind: .images, count: 32, size: 21.7e9, reclaimable: 0),
+            .init(kind: .containers, count: 7, size: 21.6e6, reclaimable: 1.4e6),
+            .init(kind: .volumes, count: 13, size: 8.05e9, reclaimable: 725e6),
+            .init(kind: .buildCache, count: 35, size: 8.75e9, reclaimable: 1.54e9),
+        ], logs: logs)
     }
 
     public nonisolated func hostLoad() -> AsyncThrowingStream<String, Error> {
