@@ -159,5 +159,6 @@ Status: done
 
 ### S-020 Porthole Help
 As the user, I choose Help › Porthole Help (⌘?) and read how the Overview, alerts, ignore rules, stacks, and shortcuts work, in my language.
-Screens: help
-Status: todo
+Screens: help-overview, help-shortcuts
+Built: a window of its own (`HelpView.swift`), ten topics; `tools/snap.sh` captures help-overview and help-shortcuts.
+Status: done

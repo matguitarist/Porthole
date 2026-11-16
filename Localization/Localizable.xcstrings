@@ -471,6 +471,66 @@
         }
       }
     },
+    "**Clear Log on Server** empties a container's log file to start fresh. A running container stops for a moment while its log is cleared: Docker 29 can't read a log emptied under a running container.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Vider le journal sur le serveur** vide le fichier journal d’un conteneur pour repartir de zéro. Un conteneur en marche s’arrête un instant pendant ce temps : Docker 29 ne sait pas relire un journal vidé sous un conteneur en marche."
+          }
+        }
+      }
+    },
+    "**Needs a Look** lists what to deal with first: a crashed or unhealthy container, a stopped array, a failing or hot disk, or parity errors.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**À vérifier** liste ce qu’il faut regarder d’abord : un conteneur planté ou en mauvaise santé, un array arrêté, un disque défaillant ou trop chaud, ou des erreurs de parité."
+          }
+        }
+      }
+    },
+    "**Open Web Page** (⌘O) opens the container's page, from its Unraid template.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Ouvrir la page web** (⌘O) ouvre la page du conteneur, d’après son modèle Unraid."
+          }
+        }
+      }
+    },
+    "**Settings › Ignored** lists your rules; remove one to count its messages again.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Réglages › Ignorés** liste vos règles ; retirez-en une pour compter de nouveau ses messages."
+          }
+        }
+      }
+    },
+    "**Storage**, **Array**, and **Docker's Space** show how full the disks are, the last parity check, each disk's temperature, and what fills Docker's space. **Biggest Logs** lists the largest log files; Control-click one to clear it.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Stockage**, **Array** et **Espace de Docker** montrent le remplissage des disques, la dernière vérification de parité, la température de chaque disque et ce qui remplit l’espace de Docker. **Plus gros journaux** liste les plus gros fichiers journaux ; cliquez sur l’un d’eux avec Contrôle pour le vider."
+          }
+        }
+      }
+    },
+    "**Warnings and Errors** reads the last 24 hours of every container's log. The chart shows them per hour; hold the pointer over an hour for its counts. Click a row to see that container's warnings and errors.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Avertissements et erreurs** lit les dernières 24 heures du journal de chaque conteneur. Le graphique les montre par heure ; placez le pointeur sur une heure pour voir ses chiffres. Cliquez sur une ligne pour voir les avertissements et erreurs de ce conteneur."
+          }
+        }
+      }
+    },
     "1 day %lld h": {
       "localizations": {
         "fr": {
@@ -557,6 +617,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "500"
+          }
+        }
+      }
+    },
+    "A stack's log merges its containers' logs in time order, and each line says which container wrote it.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le journal d’une pile réunit ceux de ses conteneurs dans l’ordre chronologique, et chaque ligne indique quel conteneur l’a écrite."
           }
         }
       }
@@ -677,6 +747,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mises à jour automatiques"
+          }
+        }
+      }
+    },
+    "Away from the Mac": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loin du Mac"
           }
         }
       }
@@ -843,6 +923,16 @@
         }
       }
     },
+    "Choose a container in the sidebar to follow its log as it's written. Porthole finds the level of each line in most formats: level words, JSON, logfmt, web access logs, and tracebacks.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisissez un conteneur dans la barre latérale pour suivre son journal en direct. Porthole trouve le niveau de chaque ligne dans la plupart des formats : mots de niveau, JSON, logfmt, journaux d’accès web et traces d’erreur."
+          }
+        }
+      }
+    },
     "Choose…": {
       "localizations": {
         "fr": {
@@ -899,6 +989,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vider le journal de %@ ?"
+          }
+        }
+      }
+    },
+    "Compose Stacks": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Piles Compose"
+          }
+        }
+      }
+    },
+    "Compose projects with more than one container appear under **Stacks** in the sidebar.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les projets Compose de plus d’un conteneur apparaissent sous **Piles** dans la barre latérale."
           }
         }
       }
@@ -1273,6 +1383,16 @@
         }
       }
     },
+    "Every action has a menu item; these are the keys.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chaque action a un élément de menu ; voici les touches."
+          }
+        }
+      }
+    },
     "Every container": {
       "localizations": {
         "fr": {
@@ -1323,6 +1443,16 @@
         }
       }
     },
+    "Filter by level, search, and fold repeated lines from the log's toolbar. **Container › Show Warnings and Errors of the Last Day** loads the whole day.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtrez par niveau, cherchez et regroupez les lignes répétées depuis la barre d’outils du journal. **Conteneur › Afficher les avertissements et erreurs du dernier jour** charge toute la journée."
+          }
+        }
+      }
+    },
     "Flash": {
       "localizations": {
         "fr": {
@@ -1359,6 +1489,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Général"
+          }
+        }
+      }
+    },
+    "Getting Started": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pour commencer"
           }
         }
       }
@@ -1503,6 +1643,16 @@
         }
       }
     },
+    "Ignoring Known Noise": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ignorer le bruit connu"
+          }
+        }
+      }
+    },
     "Images": {
       "localizations": {
         "fr": {
@@ -1519,6 +1669,26 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dans"
+          }
+        }
+      }
+    },
+    "In **Settings › Alerts**, choose the alerts you want and add Gotify to get them on your phone too. Each alert waits 15 minutes before it repeats.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dans **Réglages › Alertes**, choisissez les alertes voulues et ajoutez Gotify pour les recevoir aussi sur votre téléphone. Chaque alerte attend 15 minutes avant de se répéter."
+          }
+        }
+      }
+    },
+    "In **Settings › Server**, enter the server's SSH address (like `root@192.168.1.10`, or a Host from `~/.ssh/config`) and your key file, then click **Test Connection**. The key must log in without asking for a password.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dans **Réglages › Serveur**, saisissez l’adresse SSH du serveur (comme `root@192.168.1.10`, ou un Host de `~/.ssh/config`) et votre fichier de clé, puis cliquez sur **Tester la connexion**. La clé doit se connecter sans demander de mot de passe."
           }
         }
       }
@@ -1643,6 +1813,16 @@
         }
       }
     },
+    "Keyboard Shortcuts": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Raccourcis clavier"
+          }
+        }
+      }
+    },
     "Killed for running out of memory": {
       "localizations": {
         "fr": {
@@ -1709,6 +1889,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Niveau"
+          }
+        }
+      }
+    },
+    "Lines logged while Docker restarts don't count: every container logs its shutdown and startup then.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les lignes écrites pendant un redémarrage de Docker ne comptent pas : chaque conteneur journalise alors son arrêt et son démarrage."
           }
         }
       }
@@ -2129,6 +2319,16 @@
         }
       }
     },
+    "Porthole Help": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aide Porthole"
+          }
+        }
+      }
+    },
     "Porthole changes its language when it opens again.": {
       "localizations": {
         "fr": {
@@ -2159,12 +2359,52 @@
         }
       }
     },
+    "Porthole keeps one SSH connection open for everything it reads, so it stays light on the server.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porthole garde une seule connexion SSH ouverte pour tout ce qu’il lit, et reste ainsi léger pour le serveur."
+          }
+        }
+      }
+    },
     "Porthole on GitHub": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Porthole sur GitHub"
+          }
+        }
+      }
+    },
+    "Porthole sends a notification when a container crashes, runs out of memory, turns unhealthy, keeps restarting, or logs new errors, and when Docker itself stays busy. Click one to see that container's problems.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porthole envoie une notification quand un conteneur plante, manque de mémoire, devient en mauvaise santé, redémarre sans cesse ou écrit de nouvelles erreurs, et quand Docker lui-même reste occupé. Cliquez dessus pour voir les problèmes du conteneur."
+          }
+        }
+      }
+    },
+    "Porthole shows your Docker server's containers and their logs. It connects with SSH and runs the `docker` command, so nothing is installed on the server.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porthole montre les conteneurs de votre serveur Docker et leurs journaux. Il se connecte en SSH et lance la commande `docker` : rien n’est installé sur le serveur."
+          }
+        }
+      }
+    },
+    "Porthole's agent is a small web page that runs on the server as a container, with the same overview and live logs, on a phone too.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’agent de Porthole est une petite page web qui tourne sur le serveur dans un conteneur, avec le même aperçu et les journaux en direct, sur un téléphone aussi."
           }
         }
       }
@@ -2205,6 +2445,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Relire les %lld dernières heures du journal de chaque conteneur (Maj-Commande-P)"
+          }
+        }
+      }
+    },
+    "Reading Logs": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lire les journaux"
           }
         }
       }
@@ -2274,7 +2524,7 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Redémarrer"
+            "value": "Relancer maintenant"
           }
         }
       }
@@ -2459,6 +2709,16 @@
         }
       }
     },
+    "Settings": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réglages"
+          }
+        }
+      }
+    },
     "Settings…": {
       "localizations": {
         "fr": {
@@ -2589,6 +2849,16 @@
         }
       }
     },
+    "Some messages are expected. Select a log line and choose **Ignore Messages Like This…**: those lines stay in the log, dimmed, but no longer count as problems or send alerts.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Certains messages sont attendus. Sélectionnez une ligne du journal et choisissez **Ignorer les messages comme celui-ci…** : ces lignes restent dans le journal, estompées, mais ne comptent plus comme problèmes et n’envoient plus d’alertes."
+          }
+        }
+      }
+    },
     "Something keeps stopping it. Look at the messages just before each start.": {
       "localizations": {
         "fr": {
@@ -2635,6 +2905,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Démarrer %@ (Option-Commande-S)"
+          }
+        }
+      }
+    },
+    "Start, stop, or restart the selected container from the toolbar or the **Container** menu. Stop asks first.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Démarrez, arrêtez ou redémarrez le conteneur sélectionné depuis la barre d’outils ou le menu **Conteneur**. L’arrêt demande d’abord confirmation."
           }
         }
       }
@@ -2765,6 +3045,36 @@
         }
       }
     },
+    "The **Overview** (⌘0) is the server at a glance: CPU, memory, containers, and how long it has been up.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’**Aperçu** (⌘0) montre le serveur d’un coup d’œil : processeur, mémoire, conteneurs et depuis quand il tourne."
+          }
+        }
+      }
+    },
+    "The Menu Bar Icon": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Barre des menus"
+          }
+        }
+      }
+    },
+    "The Overview": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’aperçu"
+          }
+        }
+      }
+    },
     "The app stopped with an error. Its last messages say why.": {
       "localizations": {
         "fr": {
@@ -2791,6 +3101,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Les conteneurs de %@ n’ont encore rien écrit dans leur journal."
+          }
+        }
+      }
+    },
+    "The menu bar icon shows how the server is: a triangle when something needs a look. Its panel shows the load, what needs a look, and the containers with problems.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "L’icône de la barre des menus montre l’état du serveur : un triangle quand quelque chose est à vérifier. Son panneau montre la charge, ce qui est à vérifier et les conteneurs qui ont des problèmes."
           }
         }
       }
@@ -2995,6 +3315,26 @@
         }
       }
     },
+    "When a container is in trouble, a note at the top says why: a crash with its exit code, a failing health check, or a restart loop.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quand un conteneur a un souci, une note en haut dit pourquoi : un plantage avec son code de sortie, un contrôle de santé qui échoue ou des redémarrages en boucle."
+          }
+        }
+      }
+    },
+    "With the icon on, Porthole keeps watching and sending alerts after you close its window. Turn it on or off in **Settings › General**.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avec l’icône, Porthole continue de surveiller et d’envoyer des alertes après la fermeture de sa fenêtre. Activez-la ou non dans **Réglages › Général**."
+          }
+        }
+      }
+    },
     "With the menu bar icon on, Porthole keeps watching after you close its window.": {
       "localizations": {
         "fr": {
@@ -3011,6 +3351,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Mauvais disque"
+          }
+        }
+      }
+    },
+    "`agent/deploy.sh` installs it. It only reads, unless you start it with `PORTHOLE_ACTIONS=1`. Put it behind a login (Cloudflare Access, for example) before you open it to the internet.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "`agent/deploy.sh` l’installe. Il ne fait que lire, sauf si vous le lancez avec `PORTHOLE_ACTIONS=1`. Protégez-le par une connexion (Cloudflare Access, par exemple) avant de l’ouvrir sur Internet."
           }
         }
       }

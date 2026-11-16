@@ -71,6 +71,21 @@ enum Snapshot {
                 }
                 panel.close()
             }
+            if only == nil || only?.contains("help") == true {
+                // Help, on its first page and on the shortcuts.
+                for topic in [HelpTopic.overview, .shortcuts] {
+                    let window = NSWindow(contentRect: NSRect(x: 200, y: 200, width: 840, height: 600),
+                                          styleMask: [.titled, .fullSizeContentView], backing: .buffered, defer: false)
+                    window.isReleasedWhenClosed = false
+                    window.contentView = NSHostingView(rootView: HelpView(topic: topic).themed())
+                    for mode in ["light", "dark"] {
+                        NSApp.appearance = NSAppearance(named: mode == "light" ? .aqua : .darkAqua)
+                        try? await Task.sleep(for: .seconds(0.8))
+                        capture(to: "\(dir)/help-\(topic.rawValue)-\(mode).png", window: window)
+                    }
+                    window.close()
+                }
+            }
             print("SNAPSHOT done \(dir)")
             // An open sheet refuses terminate, and the run would wait forever.
             for window in NSApp.windows { if let sheet = window.attachedSheet { window.endSheet(sheet) } }

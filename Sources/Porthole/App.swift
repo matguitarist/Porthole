@@ -91,12 +91,21 @@ struct PortholeApp: App {
                 .disabled(model.webUI() == nil)
             }
             CommandGroup(replacing: .help) {
+                HelpMenuItem()
+                Divider()
                 Button("Porthole on GitHub") { NSWorkspace.shared.open(Links.repository) }
                 Button("What’s New in Porthole") { NSWorkspace.shared.open(Links.releaseNotes) }
                 Divider()
                 Button("Report a Problem…") { NSWorkspace.shared.open(Links.newIssue) }
             }
         }
+
+        Window("Porthole Help", id: "help") {
+            HelpView()
+                .themed()
+                .frame(minWidth: 640, minHeight: 420)
+        }
+        .defaultSize(width: 840, height: 600)
 
         StatusScene(model: model)
 
