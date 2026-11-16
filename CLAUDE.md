@@ -8,6 +8,9 @@ Rust agent with a web page, for use away from the Mac. `README.md` says what it 
 Shared rules for my Mac apps (build and check, design rules, skills, git):
 @~/.claude/mac-app-conventions.md
 
+Shared rules for how every project is laid out and named:
+@~/.claude/project-layout.md
+
 ## Layout
 
 - `Sources/Porthole/` the app. `App.swift` has the window, menus, and the database location.
