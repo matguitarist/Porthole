@@ -1653,6 +1653,16 @@
         }
       }
     },
+    "Language": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Langue"
+          }
+        }
+      }
+    },
     "Last 24 Hours": {
       "localizations": {
         "fr": {
@@ -2119,6 +2129,16 @@
         }
       }
     },
+    "Porthole changes its language when it opens again.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porthole change de langue à sa prochaine ouverture."
+          }
+        }
+      }
+    },
     "Porthole connects with SSH and the docker command. Nothing is installed on the server.": {
       "localizations": {
         "fr": {
@@ -2249,6 +2269,16 @@
         }
       }
     },
+    "Restart Now": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redémarrer"
+          }
+        }
+      }
+    },
     "Restarted": {
       "localizations": {
         "fr": {
@@ -2335,6 +2365,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Adresse SSH"
+          }
+        }
+      }
+    },
+    "Same as the Mac": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comme le Mac"
           }
         }
       }

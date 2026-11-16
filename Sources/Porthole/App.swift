@@ -116,6 +116,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
         NSApp.activate()
         if !Store.isOverridden { UNUserNotificationCenter.current().delegate = self }
         _ = Updater.shared
+        _ = AppLanguage.atLaunch
     }
 
     /// With the menu bar icon, Porthole keeps watching after the window closes.

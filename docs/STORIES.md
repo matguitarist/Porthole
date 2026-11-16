@@ -154,7 +154,8 @@ Status: done
 ### S-019 Language
 As the user, I choose Porthole's language in Settings › General (the Mac's, English, or Français), even if my Mac uses another one.
 Screens: settings-general
-Status: todo
+Built: the choice is Porthole's own AppleLanguages default, as System Settings › Language & Region › Applications sets it; Restart Now opens Porthole again.
+Status: done
 
 ### S-020 Porthole Help
 As the user, I choose Help › Porthole Help (⌘?) and read how the Overview, alerts, ignore rules, stacks, and shortcuts work, in my language.
