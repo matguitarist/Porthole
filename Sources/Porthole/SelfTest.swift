@@ -32,6 +32,9 @@ enum SelfTest {
             check("the overview shows the server's load", !model.hostLoad.cpu.isEmpty && model.hostLoad.memoryTotal > 0)
             check("and its disks", model.hostInfo?.disks.count == 3)
             check("scans every container's log for problems", model.problems.count == 7)
+            let byHour = model.problemsByHour
+            check("counts warnings and errors per hour over the day",
+                  byHour.errors.filter { $0 > 0 }.count >= 5 && byHour.warnings.contains { $0 >= 8 }, "\(byHour.errors)")
             check("lists containers with errors first", model.containersWithProblems.first?.summary.errors ?? 0 > 0)
             check("lists containers that need a look", Set(model.containersNeedingAttention.map(\.name)) == ["tautulli", "mangosd"])
             model.open("tautulli", problemsOnly: true)

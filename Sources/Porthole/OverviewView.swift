@@ -1,3 +1,4 @@
+import Charts
 import LogKit
 import PortholeKit
 import SwiftUI
@@ -224,6 +225,7 @@ struct ProblemList: View {
                 }
             }
             let rows = model.containersWithProblems
+            if !rows.isEmpty { ProblemChart() }
             GroupBox {
                 if rows.isEmpty {
                     Text(model.problemsScanned == nil ? "Reading every container's log…" : "No warnings or errors in any container.")
@@ -279,6 +281,93 @@ struct ProblemRow: View {
         guard let line = summary.latest else { return nil }
         let when = line.date.map { $0.formatted(.relative(presentation: .named)) } ?? ""
         return when.isEmpty ? line.message : "\(when): \(line.message)"
+    }
+}
+
+/// Every container's warnings and errors per hour over the last day, so a bad
+/// night or a failure every few hours shows at a glance. Hovering an hour says its counts.
+struct ProblemChart: View {
+    @Environment(AppModel.self) private var model
+    @State private var hovered: Date?
+
+    private struct Bar: Identifiable {
+        let hour: Date
+        let isError: Bool
+        let count: Int
+        var id: String { "\(hour.timeIntervalSince1970)-\(isError)" }
+    }
+
+    var body: some View {
+        let now = model.problemsScanned ?? Date()
+        let starts = ProblemSummary.hourStarts(now: now)
+        let totals = model.problemsByHour
+        let errorsName = String(localized: "Errors")
+        let warningsName = String(localized: "Warnings")
+        let bars = starts.indices.flatMap { index in
+            [Bar(hour: starts[index], isError: true, count: totals.errors[index]),
+             Bar(hour: starts[index], isError: false, count: totals.warnings[index])]
+        }
+        let hoveredIndex = hovered.flatMap { ProblemSummary.hourIndex(of: $0, now: now) }
+        GroupBox {
+            VStack(alignment: .leading, spacing: Space.sm) {
+            HStack(spacing: Space.md) {
+                if let index = hoveredIndex {
+                    let hour = starts[index].formatted(date: .omitted, time: .shortened)
+                    Text("\(hour): \(totals.errors[index]) errors, \(totals.warnings[index]) warnings")
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Per hour").foregroundStyle(.secondary)
+                }
+                Spacer(minLength: Space.sm)
+                LegendDot(color: .red, text: errorsName)
+                LegendDot(color: .orange, text: warningsName)
+            }
+            .font(.caption.monospacedDigit())
+            Chart {
+                ForEach(bars) { bar in
+                    BarMark(x: .value("Hour", bar.hour, unit: .hour), y: .value("Count", bar.count))
+                        .foregroundStyle(by: .value("Level", bar.isError ? errorsName : warningsName))
+                        .opacity(hoveredIndex == nil || starts[hoveredIndex!] == bar.hour ? 1 : 0.4)
+                }
+                if let restarted = model.dockerRestarted, restarted >= starts[0] {
+                    RuleMark(x: .value("Docker restarted", restarted))
+                        .lineStyle(StrokeStyle(lineWidth: 1, dash: [3, 3]))
+                        .foregroundStyle(.secondary)
+                        .accessibilityLabel("Docker restarted")
+                }
+            }
+            .chartForegroundStyleScale([errorsName: Color.red, warningsName: Color.orange])
+            .chartLegend(.hidden)
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .hour, count: 3)) { _ in
+                    AxisGridLine()
+                    AxisValueLabel(format: .dateTime.hour())
+                }
+            }
+            .chartYAxis {
+                AxisMarks(values: .automatic(desiredCount: 3)) { _ in
+                    AxisGridLine()
+                    AxisValueLabel()
+                }
+            }
+            .chartXSelection(value: $hovered)
+            .frame(height: 96)
+            .accessibilityLabel("Warnings and errors per hour")
+            }
+            .help("Warnings and errors per hour, all containers together. Lines without a time aren't counted here. A dashed line marks Docker's restart.")
+        }
+    }
+}
+
+struct LegendDot: View {
+    let color: Color
+    let text: String
+
+    var body: some View {
+        HStack(spacing: Space.xs) {
+            Circle().fill(color).frame(width: 8, height: 8)
+            Text(text).foregroundStyle(.secondary)
+        }
     }
 }
 

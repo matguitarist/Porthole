@@ -456,6 +456,19 @@ final class AppModel {
         .sorted { ($0.summary.errors, $0.summary.warnings, $1.container.name) > ($1.summary.errors, $1.summary.warnings, $0.container.name) }
     }
 
+    /// Every container's warnings and errors per clock hour, oldest first.
+    var problemsByHour: (errors: [Int], warnings: [Int]) {
+        var errors = Array(repeating: 0, count: ProblemSummary.hours)
+        var warnings = errors
+        for summary in problems.values {
+            for hour in errors.indices {
+                errors[hour] += summary.errorsByHour[hour]
+                warnings[hour] += summary.warningsByHour[hour]
+            }
+        }
+        return (errors, warnings)
+    }
+
     /// Containers that need a look: unhealthy, restarting, or stopped by a crash.
     var containersNeedingAttention: [Container] {
         containers.filter { container in

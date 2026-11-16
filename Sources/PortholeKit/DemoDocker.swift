@@ -156,9 +156,28 @@ public actor DemoDocker: DockerClient {
                 output += "\(Self.iso(dockerStarted.addingTimeInterval(-20))) time=\"x\" level=warning msg=\"SIGTERM received, shutting down\"\n"
                 output += "\(Self.iso(dockerStarted.addingTimeInterval(8))) time=\"x\" level=error msg=\"Machine is not enrolled in the console\"\n"
             }
+            output += Self.earlierProblems(for: container.name, now: now).joined(separator: "\n") + "\n"
             output += Self.sampleLines(for: container.name, now: now).joined(separator: "\n") + "\n"
         }
-        return ProblemSummary.parse(output, ignoring: rules)
+        return ProblemSummary.parse(output, ignoring: rules, now: now)
+    }
+
+    /// Problems spread over the day, oldest first, so the hourly chart has a shape:
+    /// tautulli fails every few hours, uptime-kuma's monitors had a bad night.
+    static func earlierProblems(for name: String, now: Date) -> [String] {
+        let hoursAgo: [(Double, String)]
+        switch name {
+        case "tautulli":
+            hoursAgo = [20, 17, 14, 11, 8, 5, 3.5].map { ($0, "2026-11-11 05:00:00 - ERROR :: CP Server Thread-9 : Failed to access uri endpoint /status/sessions. Connection error: RemoteDisconnected") }
+        case "uptime-kuma":
+            hoursAgo = [9.8, 9.6, 9.4, 9.2, 8.9, 8.7, 8.4, 7.9].map { ($0, "[MONITOR] WARN: Monitor #6 'qBittorrent': Failing: connect ECONNREFUSED 192.168.40.210:8090") }
+                + [(9.5, "[MONITOR] ERROR: Monitor #2 'Plex': Failing: timeout of 48000ms exceeded")]
+        case "syncthing":
+            hoursAgo = [(15.2, "WRN Failed to sync (path=notes.md error=\"file modified but not rescanned\")")]
+        default:
+            hoursAgo = []
+        }
+        return hoursAgo.sorted { $0.0 > $1.0 }.map { "\(iso(now.addingTimeInterval(-$0.0 * 3600))) \($0.1)" }
     }
 
     /// Lines in the formats real containers write, with Docker's timestamps.

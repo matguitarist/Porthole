@@ -122,3 +122,39 @@ Acceptance:
 - `tools/l10n-check.sh` prints L10N PASS.
 Built: Docker's own status text ("Up 6 hours") stays as Docker writes it.
 Status: done
+
+## M4 More on the Overview (0.3.0)
+
+### S-016 Errors by hour
+As the user, I see a bar chart of the last day's warnings and errors per hour above the list, so a bad night or a failure every few hours stands out; hovering an hour gives its counts.
+Screens: overview
+Acceptance:
+- [unit] A line counts in its clock hour; lines without a time aren't in the chart.
+- [self] The sample day's warnings and errors spread over several hours.
+Status: done
+
+### S-017 Docker's disk space and biggest logs
+As the user, I see how full Docker's own space is (docker.img, or the directory Docker runs from), what fills it (images, containers, volumes, build cache) and what can be freed, and which containers have the biggest log files, to clear them.
+Screens: overview
+Acceptance:
+- [unit] `docker system df` and log sizes parse; docker.img shows as its own disk, a directory on the cache doesn't repeat the cache.
+- [self] The sample shows Docker's space and the biggest logs, largest first.
+Status: todo
+
+### S-018 Unraid array and disks
+As the user, I see the array's state, a parity check in progress or the last one's result, and each disk's temperature and errors; a missing, disabled, failing, or hot disk goes in Needs a Look. Empty slots don't count.
+Screens: overview
+Acceptance:
+- [unit] var.ini and disks.ini parse; an empty parity2 slot is not a problem; spun-down disks have no temperature.
+- [self] The sample's hot disk is in Needs a Look.
+Status: todo
+
+### S-019 Language
+As the user, I choose Porthole's language in Settings › General (the Mac's, English, or Français), even if my Mac uses another one.
+Screens: settings-general
+Status: todo
+
+### S-020 Porthole Help
+As the user, I choose Help › Porthole Help (⌘?) and read how the Overview, alerts, ignore rules, stacks, and shortcuts work, in my language.
+Screens: help
+Status: todo

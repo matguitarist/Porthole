@@ -13,6 +13,10 @@ public struct ProblemSummary: Sendable, Equatable {
     public var capped = false
     /// Warnings and errors logged around Docker's last restart: not counted above.
     public var aroundRestart = 0
+    /// Counts per clock hour, oldest first; the last is the current hour.
+    /// Lines without a time aren't in them.
+    public var errorsByHour = Array(repeating: 0, count: hours)
+    public var warningsByHour = Array(repeating: 0, count: hours)
 
     public init(warnings: Int = 0, errors: Int = 0, latest: LogLine? = nil, capped: Bool = false) {
         self.warnings = warnings
@@ -51,7 +55,21 @@ public struct ProblemSummary: Sendable, Equatable {
         return Date(timeIntervalSince1970: seconds)
     }
 
-    public static func parse(_ output: String, ignoring rules: IgnoreRules = IgnoreRules()) -> [String: ProblemSummary] {
+    /// Where a line's time falls in `errorsByHour`: 0 is the hour that began
+    /// `hours - 1` hours before the current one; nil when it is older.
+    public static func hourIndex(of date: Date, now: Date) -> Int? {
+        let age = Int((now.timeIntervalSince1970 / 3600).rounded(.down)) - Int((date.timeIntervalSince1970 / 3600).rounded(.down))
+        let index = hours - 1 - max(0, age)   // a little in the future (clocks): the current hour
+        return index >= 0 ? index : nil
+    }
+
+    /// The start of each hour in `errorsByHour`.
+    public static func hourStarts(now: Date) -> [Date] {
+        let current = (now.timeIntervalSince1970 / 3600).rounded(.down) * 3600
+        return (0..<hours).map { Date(timeIntervalSince1970: current - Double(hours - 1 - $0) * 3600) }
+    }
+
+    public static func parse(_ output: String, ignoring rules: IgnoreRules = IgnoreRules(), now: Date = Date()) -> [String: ProblemSummary] {
         let restart = dockerStarted(output).map(restartWindow)
         var result: [String: ProblemSummary] = [:]
         var current: String?
@@ -77,7 +95,14 @@ public struct ProblemSummary: Sendable, Equatable {
                 result[current]?.aroundRestart += 1
                 continue
             }
-            if line.level >= .error { result[current]?.errors += 1 } else { result[current]?.warnings += 1 }
+            let hour = line.date.flatMap { hourIndex(of: $0, now: now) }
+            if line.level >= .error {
+                result[current]?.errors += 1
+                if let hour { result[current]?.errorsByHour[hour] += 1 }
+            } else {
+                result[current]?.warnings += 1
+                if let hour { result[current]?.warningsByHour[hour] += 1 }
+            }
             result[current]?.latest = line
         }
         close()

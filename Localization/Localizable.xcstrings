@@ -125,6 +125,16 @@
         }
       }
     },
+    "%@: %lld errors, %lld warnings": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@ : %2$lld erreurs, %3$lld avertissements"
+          }
+        }
+      }
+    },
     "%@: %lld new errors": {
       "localizations": {
         "en": {
@@ -823,6 +833,16 @@
         }
       }
     },
+    "Count": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nombre"
+          }
+        }
+      }
+    },
     "Count these messages as problems again": {
       "localizations": {
         "fr": {
@@ -903,6 +923,16 @@
         }
       }
     },
+    "Docker restarted": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Docker a redémarré"
+          }
+        }
+      }
+    },
     "Docker restarts it each time it stops (%lld restarts so far). The messages just before each start usually say why.": {
       "localizations": {
         "fr": {
@@ -969,6 +999,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Saisissez l’adresse SSH de votre serveur dans Réglages › Serveur."
+          }
+        }
+      }
+    },
+    "Errors": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Erreurs"
           }
         }
       }
@@ -1109,6 +1149,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "De nouveau en bonne santé"
+          }
+        }
+      }
+    },
+    "Hour": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heure"
           }
         }
       }
@@ -1359,6 +1409,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Dernier contrôle : %@"
+          }
+        }
+      }
+    },
+    "Level": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niveau"
           }
         }
       }
@@ -1635,6 +1695,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "En pause"
+          }
+        }
+      }
+    },
+    "Per hour": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Par heure"
           }
         }
       }
@@ -2395,12 +2465,42 @@
         }
       }
     },
+    "Warnings": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avertissements"
+          }
+        }
+      }
+    },
     "Warnings and Errors, Last %lld Hours": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Avertissements et erreurs des %lld dernières heures"
+          }
+        }
+      }
+    },
+    "Warnings and errors per hour": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avertissements et erreurs par heure"
+          }
+        }
+      }
+    },
+    "Warnings and errors per hour, all containers together. Lines without a time aren't counted here. A dashed line marks Docker's restart.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avertissements et erreurs par heure, tous les conteneurs ensemble. Les lignes sans heure n’y sont pas comptées. Une ligne pointillée marque le redémarrage de Docker."
           }
         }
       }
