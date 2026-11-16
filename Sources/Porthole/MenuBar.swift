@@ -13,7 +13,7 @@ enum MenuBarStatus {
         case .connecting: "shippingbox"
         case .failed: "shippingbox.and.arrow.backward"
         case .connected:
-            !model.containersNeedingAttention.isEmpty ? "exclamationmark.triangle.fill"
+            !model.containersNeedingAttention.isEmpty || !model.serverConcerns.isEmpty ? "exclamationmark.triangle.fill"
                 : model.containersWithProblems.contains { $0.summary.errors > 0 } ? "shippingbox.fill" : "shippingbox"
         }
     }
@@ -73,9 +73,24 @@ struct MenuBarPanel: View {
     @ViewBuilder
     private var attention: some View {
         let needing = model.containersNeedingAttention
-        if !needing.isEmpty {
+        let concerns = model.serverConcerns
+        if !needing.isEmpty || !concerns.isEmpty {
             VStack(alignment: .leading, spacing: Space.xs) {
                 Text("Needs a Look").font(.subheadline).foregroundStyle(.secondary)
+                ForEach(concerns) { concern in
+                    Button { show(nil) } label: {
+                        HStack(spacing: Space.sm) {
+                            Image(systemName: concern.serious ? "xmark.octagon.fill" : "thermometer.high")
+                                .foregroundStyle(concern.serious ? .red : .orange).frame(width: 16)
+                            Text(concern.title).lineLimit(1)
+                            Spacer(minLength: Space.sm)
+                            Text(concern.detail).font(.caption.monospacedDigit()).foregroundStyle(.secondary).lineLimit(1)
+                        }
+                        .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Show the Overview")
+                }
                 ForEach(needing) { container in
                     row(container.name, detail: container.status, symbol: "exclamationmark.triangle.fill", color: .orange)
                 }

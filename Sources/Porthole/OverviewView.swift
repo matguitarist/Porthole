@@ -25,6 +25,7 @@ struct OverviewView: View {
                             .frame(maxWidth: .infinity)
                             VStack(alignment: .leading, spacing: Space.xxl) {
                                 StorageSection(columns: 2)
+                                ArraySection()
                                 DockerSpace()
                                 EventList()
                             }
@@ -37,6 +38,7 @@ struct OverviewView: View {
                         EventList()
                         BusiestList()
                         BiggestLogs()
+                        ArraySection()
                         DockerSpace()
                     }
                 }
@@ -217,7 +219,7 @@ struct AttentionSection: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        if !model.containersNeedingAttention.isEmpty { AttentionList() }
+        if !model.containersNeedingAttention.isEmpty || !model.serverConcerns.isEmpty { AttentionList() }
     }
 }
 
@@ -229,8 +231,12 @@ struct AttentionList: View {
             SectionTitle("Needs a Look")
             GroupBox {
                 VStack(spacing: 0) {
-                    ForEach(Array(model.containersNeedingAttention.enumerated()), id: \.element.id) { index, container in
+                    ForEach(Array(model.serverConcerns.enumerated()), id: \.element.id) { index, concern in
                         if index > 0 { Divider() }
+                        ConcernRow(concern: concern)
+                    }
+                    ForEach(Array(model.containersNeedingAttention.enumerated()), id: \.element.id) { index, container in
+                        if index > 0 || !model.serverConcerns.isEmpty { Divider() }
                         let look = StateBadge.look(container)
                         OverviewRow(container: container, action: { model.open(container.name) }) {
                             Label(look.help, systemImage: look.symbol)
@@ -241,6 +247,121 @@ struct AttentionList: View {
                 }
             }
         }
+    }
+}
+
+/// A disk or the array in Needs a Look; it opens Unraid's Main page.
+struct ConcernRow: View {
+    let concern: ServerConcern
+
+    var body: some View {
+        Button { NSWorkspace.shared.open(Links.unraidMain) } label: {
+            HStack(spacing: Space.md) {
+                Image(systemName: "internaldrive").foregroundStyle(.secondary).frame(width: 24, height: 24)
+                Text(concern.title).foregroundStyle(.primary)
+                Spacer(minLength: Space.md)
+                Label(concern.detail, systemImage: concern.serious ? "xmark.octagon.fill" : "thermometer.high")
+                    .foregroundStyle(concern.serious ? .red : .orange)
+                    .font(.callout)
+                Image(systemName: "arrow.up.forward").font(.caption).foregroundStyle(.tertiary)
+            }
+            .padding(.vertical, Space.sm)
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .help("Open the server's Main page in Unraid")
+    }
+}
+
+/// Unraid's array: the parity check and each disk's temperature and errors.
+struct ArraySection: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        if let array = model.hostInfo?.array {
+            VStack(alignment: .leading, spacing: Space.sm) {
+                HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
+                    SectionTitle("Array")
+                    Text(array.isStarted ? "Started" : "Not started")
+                        .font(.caption).foregroundStyle(array.isStarted ? AnyShapeStyle(.secondary) : AnyShapeStyle(.red))
+                }
+                GroupBox {
+                    VStack(alignment: .leading, spacing: 0) {
+                        ParityLine(array: array).padding(.vertical, Space.sm)
+                        ForEach(array.disks) { disk in
+                            Divider()
+                            DiskRow(disk: disk)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+struct ParityLine: View {
+    let array: UnraidArray
+
+    var body: some View {
+        if let check = array.check {
+            VStack(alignment: .leading, spacing: Space.xs) {
+                HStack {
+                    Label(check.title, systemImage: "arrow.triangle.2.circlepath")
+                    Spacer(minLength: Space.sm)
+                    Text(Format.percent(check.fraction * 100)).monospacedDigit()
+                }
+                ProgressView(value: check.fraction)
+                Text(details(check)).font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+            }
+        } else if let last = array.lastCheck {
+            HStack(alignment: .firstTextBaseline) {
+                Label("Last parity check", systemImage: last.errors > 0 ? "xmark.octagon.fill" : "checkmark.shield")
+                    .foregroundStyle(last.errors > 0 ? .red : .primary)
+                Spacer(minLength: Space.sm)
+                Text(summary(last)).font(.callout.monospacedDigit())
+                    .foregroundStyle(last.errors > 0 ? .red : .secondary)
+            }
+            .help("Ended \(last.finished.formatted(date: .abbreviated, time: .shortened)) after \(Format.duration(last.duration))")
+        } else {
+            Label("No parity check yet", systemImage: "shield").foregroundStyle(.secondary)
+        }
+    }
+
+    private func details(_ check: UnraidArray.Check) -> String {
+        guard check.speed > 0, let remaining = check.remaining else { return " " }
+        let speed = ByteCountFormatter.string(fromByteCount: Int64(check.speed), countStyle: .decimal)
+        return String(localized: "\(speed)/s, about \(Format.duration(remaining)) left")
+    }
+
+    private func summary(_ last: UnraidArray.LastCheck) -> String {
+        let when = last.finished.formatted(.relative(presentation: .named))
+        if last.exit != 0 { return String(localized: "\(when), stopped before the end") }
+        if last.errors > 0 { return last.errors == 1 ? String(localized: "\(when), 1 error") : String(localized: "\(when), \(last.errors) errors") }
+        return String(localized: "\(when), no errors")
+    }
+}
+
+struct DiskRow: View {
+    let disk: UnraidArray.Disk
+
+    var body: some View {
+        HStack(spacing: Space.md) {
+            Image(systemName: disk.type == "Parity" ? "lock.shield" : disk.rotational ? "internaldrive" : "memorychip")
+                .foregroundStyle(.secondary).frame(width: 16)
+            Text(disk.title)
+            Spacer(minLength: Space.sm)
+            if disk.isSerious, let problem = disk.problem {
+                Label(problem, systemImage: "xmark.octagon.fill").foregroundStyle(.red).font(.callout)
+            } else if let temperature = disk.temperature {
+                Label("\(temperature) °C", systemImage: disk.isHot ? "thermometer.high" : "thermometer.medium")
+                    .foregroundStyle(disk.isHot ? AnyShapeStyle(.orange) : AnyShapeStyle(.secondary))
+                    .font(.callout.monospacedDigit())
+            } else if disk.spunDown {
+                Label("Spun down", systemImage: "moon.zzz").foregroundStyle(.secondary).font(.callout)
+            }
+        }
+        .padding(.vertical, Space.sm)
+        .help(disk.rotational ? String(localized: "Hard disks are hot from \(disk.hotFrom) °C") : String(localized: "SSDs are hot from \(disk.hotFrom) °C"))
     }
 }
 

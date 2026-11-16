@@ -480,6 +480,23 @@ final class AppModel {
         return (errors, warnings)
     }
 
+    /// The server's own trouble: the array stopped, a disk failing or hot, parity errors.
+    var serverConcerns: [ServerConcern] {
+        guard let array = hostInfo?.array else { return [] }
+        var concerns: [ServerConcern] = []
+        if !array.isStarted {
+            concerns.append(ServerConcern(id: "array", title: String(localized: "Array"), detail: String(localized: "Not started"), serious: true))
+        }
+        for disk in array.troubled {
+            concerns.append(ServerConcern(id: "disk-\(disk.name)", title: disk.title, detail: disk.problem ?? "", serious: disk.isSerious))
+        }
+        if let last = array.lastCheck, last.errors > 0, array.check == nil {
+            concerns.append(ServerConcern(id: "parity", title: String(localized: "Parity"),
+                                          detail: String(localized: "Last check found \(last.errors) errors"), serious: true))
+        }
+        return concerns
+    }
+
     /// Containers that need a look: unhealthy, restarting, or stopped by a crash.
     var containersNeedingAttention: [Container] {
         containers.filter { container in
@@ -700,4 +717,13 @@ final class AppModel {
     func webUI(for container: Container? = nil) -> URL? {
         (container ?? selected)?.webUI(host: ServerSettings.host)
     }
+}
+
+/// Something wrong with the server itself, for Needs a Look.
+struct ServerConcern: Identifiable, Equatable {
+    let id: String
+    let title: String
+    let detail: String
+    /// A failing disk or parity errors, not just heat.
+    let serious: Bool
 }

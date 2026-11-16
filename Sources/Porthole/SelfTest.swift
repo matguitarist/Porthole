@@ -39,6 +39,8 @@ enum SelfTest {
             check("counts warnings and errors per hour over the day",
                   byHour.errors.filter { $0 > 0 }.count >= 5 && byHour.warnings.contains { $0 >= 8 }, "\(byHour.errors)")
             check("lists containers with errors first", model.containersWithProblems.first?.summary.errors ?? 0 > 0)
+            check("reads Unraid's array and its disks", model.hostInfo?.array?.disks.count == 5 && model.hostInfo?.array?.lastCheck != nil)
+            check("a hot disk needs a look, a warm SSD doesn't", model.serverConcerns.map(\.id) == ["disk-disk2"])
             check("lists containers that need a look", Set(model.containersNeedingAttention.map(\.name)) == ["tautulli", "mangosd"])
             model.open("tautulli", problemsOnly: true)
             check("a problem row opens the container's warnings and errors",

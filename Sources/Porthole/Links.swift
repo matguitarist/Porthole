@@ -11,6 +11,9 @@ enum Links {
     /// This version's release page, with its notes.
     static var releaseNotes: URL { repository.appending(path: "releases/tag/v\(version)") }
 
+    /// Unraid's Main page: the array and its disks.
+    static var unraidMain: URL { URL(string: "http://\(ServerSettings.host)/Main") ?? repository }
+
     /// A new issue, with the version and macOS filled in.
     static var newIssue: URL {
         let os = ProcessInfo.processInfo.operatingSystemVersionString

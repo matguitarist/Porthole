@@ -148,7 +148,8 @@ Screens: overview
 Acceptance:
 - [unit] var.ini and disks.ini parse; an empty parity2 slot is not a problem; spun-down disks have no temperature.
 - [self] The sample's hot disk is in Needs a Look.
-Status: todo
+Built: read with the host info every minute (one SSH command). Hot is 50 °C for a hard disk, 70 °C for an SSD: the cache NVMe runs at 54 °C. A row in Needs a Look opens Unraid's Main page.
+Status: done
 
 ### S-019 Language
 As the user, I choose Porthole's language in Settings › General (the Mac's, English, or Français), even if my Mac uses another one.

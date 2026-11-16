@@ -119,7 +119,13 @@ public actor DemoDocker: DockerClient {
             .init(mount: "/mnt/cache", size: 500e9, used: 321e9),
             .init(mount: "/boot", size: 31e9, used: 2.7e9),
             .init(mount: "/var/lib/docker", size: 53.7e9, used: 39.4e9, filesystem: "/dev/loop2"),
-        ])
+        ], array: UnraidArray(disks: [
+            .init(name: "parity", type: "Parity", temperature: 38),
+            .init(name: "disk1", type: "Data", temperature: 41),
+            .init(name: "disk2", type: "Data", temperature: 52),
+            .init(name: "disk3", type: "Data", spunDown: true),
+            .init(name: "cache", type: "Cache", temperature: 54, rotational: false),
+        ], lastCheck: .init(finished: now.addingTimeInterval(-30 * 3600), duration: 21_081, errors: 0, exit: 0)))
     }
 
     public func dockerDisk() async throws -> DockerDisk {

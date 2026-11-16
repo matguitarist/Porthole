@@ -139,6 +139,56 @@
         }
       }
     },
+    "%@, %lld errors": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@, %2$lld erreurs"
+          }
+        }
+      }
+    },
+    "%@, 1 error": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, 1 erreur"
+          }
+        }
+      }
+    },
+    "%@, no errors": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, aucune erreur"
+          }
+        }
+      }
+    },
+    "%@, stopped before the end": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, arrêté avant la fin"
+          }
+        }
+      }
+    },
+    "%@/s, about %@ left": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%1$@/s, encore environ %2$@"
+          }
+        }
+      }
+    },
     "%@: %@ free": {
       "localizations": {
         "en": {
@@ -329,6 +379,16 @@
         }
       }
     },
+    "%lld read or write errors": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld erreurs de lecture ou d’écriture"
+          }
+        }
+      }
+    },
     "%lld running": {
       "localizations": {
         "fr": {
@@ -365,6 +425,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%lld en mauvaise santé"
+          }
+        }
+      }
+    },
+    "%lld °C": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld °C"
           }
         }
       }
@@ -417,6 +487,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "1 restante"
+          }
+        }
+      }
+    },
+    "1 read or write error": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 erreur de lecture ou d’écriture"
           }
         }
       }
@@ -883,6 +963,16 @@
         }
       }
     },
+    "Contents not valid": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contenu non valide"
+          }
+        }
+      }
+    },
     "Couldn't Do That": {
       "localizations": {
         "fr": {
@@ -919,6 +1009,46 @@
           "stringUnit": {
             "state": "translated",
             "value": "Plantages, manque de mémoire, mauvaise santé, redémarrages en boucle"
+          }
+        }
+      }
+    },
+    "Disabled": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Désactivé"
+          }
+        }
+      }
+    },
+    "Disk %lld": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disque %lld"
+          }
+        }
+      }
+    },
+    "Disk clear": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effacement du disque"
+          }
+        }
+      }
+    },
+    "Disk rebuild": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconstruction du disque"
           }
         }
       }
@@ -1069,6 +1199,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Vider les fichiers journaux de ces conteneurs sur le serveur"
+          }
+        }
+      }
+    },
+    "Ended %@ after %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terminé %1$@ après %2$@"
           }
         }
       }
@@ -1233,12 +1373,32 @@
         }
       }
     },
+    "Hard disks are hot from %lld °C": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les disques durs sont chauds à partir de %lld °C"
+          }
+        }
+      }
+    },
     "Healthy again": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "De nouveau en bonne santé"
+          }
+        }
+      }
+    },
+    "Hot: %lld °C": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chaud : %lld °C"
           }
         }
       }
@@ -1503,12 +1663,32 @@
         }
       }
     },
+    "Last check found %lld errors": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La dernière vérification a trouvé %lld erreurs"
+          }
+        }
+      }
+    },
     "Last check: %@": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Dernier contrôle : %@"
+          }
+        }
+      }
+    },
+    "Last parity check": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dernière vérification de parité"
           }
         }
       }
@@ -1629,12 +1809,32 @@
         }
       }
     },
+    "Missing": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Absent"
+          }
+        }
+      }
+    },
     "Needs a Look": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "À vérifier"
+          }
+        }
+      }
+    },
+    "New disk, not in use yet": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouveau disque, pas encore utilisé"
           }
         }
       }
@@ -1699,6 +1899,16 @@
         }
       }
     },
+    "No parity check yet": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucune vérification de parité"
+          }
+        }
+      }
+    },
     "No warnings or errors": {
       "localizations": {
         "fr": {
@@ -1715,6 +1925,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aucun avertissement ni erreur dans aucun conteneur."
+          }
+        }
+      }
+    },
+    "Not started": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Non démarré"
           }
         }
       }
@@ -1779,12 +1999,62 @@
         }
       }
     },
+    "Open the server's Main page in Unraid": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir la page Main du serveur dans Unraid"
+          }
+        }
+      }
+    },
     "Overview": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Aperçu"
+          }
+        }
+      }
+    },
+    "Parity": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parité"
+          }
+        }
+      }
+    },
+    "Parity %lld": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parité %lld"
+          }
+        }
+      }
+    },
+    "Parity check": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérification de parité"
+          }
+        }
+      }
+    },
+    "Parity sync": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Synchronisation de parité"
           }
         }
       }
@@ -2049,6 +2319,16 @@
         }
       }
     },
+    "SSDs are hot from %lld °C": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les SSD sont chauds à partir de %lld °C"
+          }
+        }
+      }
+    },
     "SSH address": {
       "localizations": {
         "fr": {
@@ -2249,6 +2529,16 @@
         }
       }
     },
+    "Show the Overview": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher l’aperçu"
+          }
+        }
+      }
+    },
     "Since %@": {
       "localizations": {
         "fr": {
@@ -2265,6 +2555,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Quelque chose l’arrête sans cesse. Regardez les messages juste avant chaque démarrage."
+          }
+        }
+      }
+    },
+    "Spun down": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À l’arrêt"
           }
         }
       }
@@ -2661,6 +2961,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Avec l’icône dans la barre des menus, Porthole continue de surveiller après la fermeture de sa fenêtre."
+          }
+        }
+      }
+    },
+    "Wrong disk": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mauvais disque"
           }
         }
       }

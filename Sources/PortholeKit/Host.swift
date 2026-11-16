@@ -38,21 +38,27 @@ public struct HostInfo: Sendable, Equatable {
     public var version: String
     public var cores: Int
     public var disks: [Disk]
+    /// Unraid's array and its disks; nil on another server.
+    public var array: UnraidArray?
 
-    public init(hostname: String = "", version: String = "", cores: Int = 1, disks: [Disk] = []) {
+    public init(hostname: String = "", version: String = "", cores: Int = 1, disks: [Disk] = [], array: UnraidArray? = nil) {
         self.hostname = hostname
         self.version = version
         self.cores = cores
         self.disks = disks
+        self.array = array
     }
 
     public static let command = #"""
     echo "@host $(hostname)"; echo "@cores $(nproc)"; echo "@version $(sed -n 's/^version="\(.*\)"/\1/p' /etc/unraid-version 2>/dev/null)"; df -B1 -P /mnt/user /mnt/cache /boot /var/lib/docker 2>/dev/null | tail -n +2 | awk '{print "@disk", $6, $2, $3, $1}'
-    """#
+    """# + "; " + UnraidArray.command
 
     public static func parse(_ output: String) -> HostInfo {
         var info = HostInfo()
+        var variables: [Substring] = [], diskLines: [Substring] = []
         for line in output.split(separator: "\n") {
+            if line.hasPrefix("@var ") { variables.append(line.dropFirst(5)); continue }
+            if line.hasPrefix("@dsk ") { diskLines.append(line.dropFirst(5)); continue }
             let parts = line.split(separator: " ", omittingEmptySubsequences: true)
             guard let tag = parts.first else { continue }
             switch tag {
@@ -69,6 +75,7 @@ public struct HostInfo: Sendable, Equatable {
             default: break
             }
         }
+        info.array = UnraidArray.parse(variables: variables, disks: diskLines)
         return info
     }
 
