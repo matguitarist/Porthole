@@ -188,4 +188,4 @@ Acceptance:
 - [unit] Unraid's update_container runs detached from the SSH session, with the name quoted, and fails when the container isn't back.
 - [self] Update All asks first; updating syncthing takes it off the list.
 Built: one container at a time; the row shows Updating… then leaves the list once Unraid's update check says it's current. Unraid sets TZ from the server's time zone, as its own button does.
-Status: built (needs the owner: a first real update on the server)
+Status: done (2026-11-17: SillyTavern updated on the server, image changed, Unraid marks it current)
