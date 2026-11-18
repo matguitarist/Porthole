@@ -116,7 +116,7 @@ enum HelpTopic: String, CaseIterable, Identifiable {
         ]
         case .overview: [
             "The **Overview** (⌘0) is the server at a glance: CPU, memory, network, disk activity, containers, and how long it has been up. When the CPU waits on the disks a lot, **Disk Activity** says so: a parity check or the mover is slowing things down.",
-            "**Updates** lists the containers whose image has a newer version, from Unraid's own update check. Click one to update it on Unraid's Docker page.",
+            "**Updates** lists the containers whose image has a newer version, from Unraid's own update check. **Update…** pulls the new image and recreates the container from its Unraid template, as Unraid's Update button does; **Update All…** does every one in turn. The container is down for a moment, and its log starts over.",
             "**Needs a Look** lists what to deal with first: a crashed or unhealthy container, a stopped array, a failing or hot disk, or parity errors.",
             "**Warnings and Errors** reads the last 24 hours of every container's log. The chart shows them per hour; hold the pointer over an hour for its counts. Click a row to see that container's warnings and errors.",
             "**Storage**, **Array**, and **Docker's Space** show how full the disks are, the last parity check, each disk's temperature, and what fills Docker's space. **Biggest Logs** lists the largest log files; Control-click one to clear it.",

@@ -28,6 +28,15 @@ struct ContentView: View {
         } message: {
             Text("It stops answering until you start it again. Anything that depends on it stops working too.")
         }
+        .confirmationDialog(Text("Update \(model.confirmUpdate?.title ?? "")?"), isPresented: Binding(
+            get: { model.confirmUpdate != nil }, set: { if !$0 { model.confirmUpdate = nil } })) {
+            Button("Update") {
+                if let request = model.confirmUpdate { Task { await model.updateImages(request.names) } }
+                model.confirmUpdate = nil
+            }
+        } message: {
+            Text("Porthole pulls the new image and recreates the container from its Unraid template, as Unraid's Update button does. It's down for a moment, and its log starts over.")
+        }
         .confirmationDialog(Text("Clear the log of \(model.confirmClear?.title ?? "")?"), isPresented: Binding(
             get: { model.confirmClear != nil }, set: { if !$0 { model.confirmClear = nil } })) {
             Button("Clear on Server", role: .destructive) {
@@ -218,6 +227,9 @@ struct ContainerActions: View {
             .disabled(!model.canPerform(.stop, on: container))
         Button("Restart", systemImage: "arrow.clockwise") { model.request(.restart, on: container.name) }
             .disabled(!model.canPerform(.restart, on: container))
+        if model.canUpdate(container) {
+            Button("Update…", systemImage: "arrow.down.circle") { model.requestUpdate([container.name]) }
+        }
         if let url = model.webUI(for: container) {
             Divider()
             Button("Open Web Page", systemImage: "safari") { NSWorkspace.shared.open(url) }

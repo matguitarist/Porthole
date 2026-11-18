@@ -531,12 +531,12 @@
         }
       }
     },
-    "**Updates** lists the containers whose image has a newer version, from Unraid's own update check. Click one to update it on Unraid's Docker page.": {
+    "**Updates** lists the containers whose image has a newer version, from Unraid's own update check. **Update…** pulls the new image and recreates the container from its Unraid template, as Unraid's Update button does; **Update All…** does every one in turn. The container is down for a moment, and its log starts over.": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "**Mises à jour** liste les conteneurs dont l’image a une version plus récente, selon la vérification d’Unraid. Cliquez sur l’un d’eux pour le mettre à jour dans la page Docker d’Unraid."
+            "value": "**Mises à jour** liste les conteneurs dont l’image a une version plus récente, selon la vérification d’Unraid. **Mettre à jour…** télécharge la nouvelle image et recrée le conteneur à partir de son modèle Unraid, comme le bouton Update d’Unraid ; **Tout mettre à jour…** les fait l’un après l’autre. Le conteneur s’arrête un instant et son journal repart de zéro."
           }
         }
       }
@@ -641,12 +641,12 @@
         }
       }
     },
-    "A newer %@ is out. Click to update it on Unraid's Docker page.": {
+    "A newer %@ is out. Click to show %@'s log.": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Une version plus récente de %@ est sortie. Cliquez pour la mettre à jour dans la page Docker d’Unraid."
+            "value": "Une version plus récente de %@ est sortie. Cliquez pour afficher le journal de %@."
           }
         }
       }
@@ -2479,6 +2479,16 @@
         }
       }
     },
+    "Porthole pulls the new image and recreates the container from its Unraid template, as Unraid's Update button does. It's down for a moment, and its log starts over.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Porthole télécharge la nouvelle image et recrée le conteneur à partir de son modèle Unraid, comme le bouton Update d’Unraid. Il s’arrête un instant et son journal repart de zéro."
+          }
+        }
+      }
+    },
     "Porthole sends a notification when a container crashes, runs out of memory, turns unhealthy, keeps restarting, or logs new errors, and when Docker itself stays busy. Click one to see that container's problems.": {
       "localizations": {
         "fr": {
@@ -2515,6 +2525,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Aperçu de la couleur d’accentuation"
+          }
+        }
+      }
+    },
+    "Pull the new image and recreate %@, as Unraid's Update button does": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Télécharger la nouvelle image et recréer %@, comme le bouton Update d’Unraid"
           }
         }
       }
@@ -3305,12 +3325,62 @@
         }
       }
     },
+    "Unraid didn't update %@. Its Docker page shows why.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unraid n’a pas mis à jour %@. Sa page Docker indique pourquoi."
+          }
+        }
+      }
+    },
     "Up For": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "En marche depuis"
+          }
+        }
+      }
+    },
+    "Update": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mettre à jour"
+          }
+        }
+      }
+    },
+    "Update %@?": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mettre à jour %@ ?"
+          }
+        }
+      }
+    },
+    "Update All…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tout mettre à jour…"
+          }
+        }
+      }
+    },
+    "Update every container in this list, one after the other": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mettre à jour chaque conteneur de cette liste, l’un après l’autre"
           }
         }
       }
@@ -3355,6 +3425,26 @@
         }
       }
     },
+    "Update…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mettre à jour…"
+          }
+        }
+      }
+    },
+    "Updating…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mise à jour…"
+          }
+        }
+      }
+    },
     "Version %@": {
       "localizations": {
         "fr": {
@@ -3381,6 +3471,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Attente des disques %@"
+          }
+        }
+      }
+    },
+    "Waiting…": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En attente…"
           }
         }
       }

@@ -395,12 +395,13 @@ struct DiskRow: View {
 }
 
 /// Containers whose image has a newer version, from Unraid's own update check.
-/// A row opens Unraid's Docker page, where the update is applied.
+/// Update pulls it and recreates the container; a row opens the container.
 struct UpdatesSection: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        let containers = model.containersWithUpdates
+        // Rows stay while they update, so the progress shows where the click was.
+        let containers = model.containers.filter { model.containersWithUpdates.contains($0) || model.updating.contains($0.name) }
         if !containers.isEmpty {
             VStack(alignment: .leading, spacing: Space.sm) {
                 HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
@@ -409,25 +410,66 @@ struct UpdatesSection: View {
                         Text("Checked \(checked.formatted(.relative(presentation: .named)))")
                             .font(.caption).foregroundStyle(.secondary)
                     }
+                    Spacer(minLength: Space.sm)
+                    if containers.count > 1 {
+                        Button("Update All…") { model.requestUpdate() }
+                            .buttonStyle(.link)
+                            .disabled(!model.updating.isEmpty)
+                            .help("Update every container in this list, one after the other")
+                    }
                 }
                 GroupBox {
                     VStack(spacing: 0) {
                         ForEach(Array(containers.enumerated()), id: \.element.id) { index, container in
                             if index > 0 { Divider() }
-                            OverviewRow(container: container, detail: container.image, opensWeb: true,
-                                        action: { NSWorkspace.shared.open(Links.unraidDocker) }) {
-                                Label("Update ready", systemImage: "arrow.down.circle")
-                                    .font(.callout).foregroundStyle(Palette.accentText)
-                            }
-                            .help("A newer \(container.image) is out. Click to update it on Unraid's Docker page.")
-                            .contextMenu {
-                                Button("Open Unraid's Docker Page") { NSWorkspace.shared.open(Links.unraidDocker) }
-                                Button("Show Whole Log") { model.open(container.name) }
-                            }
+                            UpdateRow(container: container)
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+/// A container with a newer image: the row opens it, the button updates it.
+struct UpdateRow: View {
+    @Environment(AppModel.self) private var model
+    let container: Container
+
+    var body: some View {
+        HStack(spacing: Space.md) {
+            Button { model.open(container.name) } label: {
+                HStack(spacing: Space.md) {
+                    ContainerIcon(container: container)
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(container.name).foregroundStyle(.primary)
+                        Text(container.image).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+                    }
+                    Spacer(minLength: Space.md)
+                }
+                .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .help("A newer \(container.image) is out. Click to show \(container.name)'s log.")
+            if model.updating.contains(container.name) {
+                HStack(spacing: Space.sm) {
+                    ProgressView().controlSize(.small)
+                    Text(model.busy.contains(container.name) ? "Updating…" : "Waiting…").foregroundStyle(.secondary)
+                }
+                .font(.callout)
+            } else {
+                Button("Update…") { model.requestUpdate([container.name]) }
+                    .controlSize(.small)
+                    .disabled(!model.canUpdate(container))
+                    .help("Pull the new image and recreate \(container.name), as Unraid's Update button does")
+            }
+        }
+        .padding(.vertical, Space.sm)
+        .contextMenu {
+            Button("Update…") { model.requestUpdate([container.name]) }.disabled(!model.canUpdate(container))
+            Button("Show Whole Log") { model.open(container.name) }
+            Divider()
+            Button("Open Unraid's Docker Page") { NSWorkspace.shared.open(Links.unraidDocker) }
         }
     }
 }

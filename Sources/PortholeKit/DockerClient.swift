@@ -40,6 +40,8 @@ public protocol DockerClient: Sendable {
     /// Raw `docker stats` JSON lines, a round for all running containers every two seconds.
     func stats() -> AsyncThrowingStream<String, Error>
     func perform(_ action: ContainerAction, on name: String) async throws
+    /// Pulls the container's newer image and recreates it, with Unraid's own update.
+    func updateImage(of name: String) async throws
     /// Icons from Unraid's templates and Porthole's list on the server.
     func serverIcons() async throws -> ServerIcons
     /// A file on the server (an icon).
@@ -199,6 +201,10 @@ public actor SSHDocker: DockerClient {
 
     public func perform(_ action: ContainerAction, on name: String) async throws {
         _ = try await command("docker \(action.rawValue) \(Self.quote(name))")
+    }
+
+    public func updateImage(of name: String) async throws {
+        _ = try await command(ImageUpdates.updateCommand(name))
     }
 
     public func serverIcons() async throws -> ServerIcons {

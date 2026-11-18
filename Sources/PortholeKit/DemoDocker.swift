@@ -49,6 +49,7 @@ public actor DemoDocker: DockerClient {
     }
 
     private var cleared: Set<String> = []
+    private var updatable: Set<String> = ["louislam/uptime-kuma:2", "syncthing/syncthing:latest"]
 
     public func clearLogs(_ names: [String]) async throws { cleared.formUnion(names) }
 
@@ -107,6 +108,11 @@ public actor DemoDocker: DockerClient {
         }
     }
 
+    public func updateImage(of name: String) async throws {
+        guard let container = list.first(where: { $0.name == name }) else { return }
+        updatable.remove(ImageUpdates.normalized(container.image))
+    }
+
     public func serverIcons() async throws -> ServerIcons { ServerIcons() }
 
     public func serverFile(_ path: String) async throws -> Data {
@@ -126,7 +132,7 @@ public actor DemoDocker: DockerClient {
             .init(name: "disk3", type: "Data", spunDown: true),
             .init(name: "cache", type: "Cache", temperature: 54, rotational: false),
         ], lastCheck: .init(finished: now.addingTimeInterval(-30 * 3600), duration: 21_081, errors: 0, exit: 0)),
-        updates: ImageUpdates(available: ["louislam/uptime-kuma:2", "syncthing/syncthing:latest"],
+        updates: ImageUpdates(available: updatable,
                               checked: now.addingTimeInterval(-5 * 3600)))
     }
 

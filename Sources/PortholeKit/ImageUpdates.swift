@@ -42,6 +42,20 @@ public struct ImageUpdates: Sendable, Equatable {
         return name
     }
 
+    /// Unraid's own update, as its Update button runs it: pull the image, then
+    /// recreate the container from its template, running again if it ran before.
+    static let updateScript = "/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container"
+
+    /// Runs Unraid's update for one container, detached from the SSH session,
+    /// so a dropped connection can't leave the container removed and not yet
+    /// recreated. Waits for it, then fails if the container is gone.
+    static func updateCommand(_ name: String) -> String {
+        let quoted = SSHDocker.quote(name)
+        return "u=\(updateScript); [ -x $u ] || { echo 'Only an Unraid server can update containers from Porthole.' >&2; exit 1; }; "
+            + "setsid nohup $u \(quoted) >/dev/null 2>&1 </dev/null & wait $!; "
+            + "docker inspect \(quoted) >/dev/null 2>&1 || { echo \(SSHDocker.quote("Unraid didn't recreate \(name). Its Docker page shows why.")) >&2; exit 1; }"
+    }
+
     public func hasUpdate(_ image: String) -> Bool {
         available.contains(Self.normalized(image))
     }

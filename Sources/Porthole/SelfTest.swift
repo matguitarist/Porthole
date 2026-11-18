@@ -34,6 +34,14 @@ enum SelfTest {
             check("shows network and disk activity, and I/O wait", !model.hostLoad.network.isEmpty && !model.hostLoad.disk.isEmpty && !model.hostLoad.ioWait.isEmpty)
             check("lists the containers with an image update", Set(model.containersWithUpdates.map(\.name)) == ["uptime-kuma", "syncthing"],
                   "\(model.containersWithUpdates.map(\.name))")
+            model.requestUpdate()
+            check("Update All asks first, for every container with an update", model.confirmUpdate?.names.sorted() == ["syncthing", "uptime-kuma"])
+            model.confirmUpdate = nil
+            await model.updateImages(["syncthing"])
+            check("updating a container takes it off the list", model.containersWithUpdates.map(\.name) == ["uptime-kuma"] && model.actionError == nil,
+                  "\(model.containersWithUpdates.map(\.name)) \(model.actionError ?? "")")
+            check("and its menu no longer offers Update", !model.canUpdate(model.containers.first { $0.name == "syncthing" }))
+            check("and it is no longer shown as updating", !model.updating.contains("syncthing"))
             check("and its disks, Docker's too", model.hostInfo?.disks.count == 4 && model.hostInfo?.disks.last?.isDocker == true)
             for _ in 0..<50 where model.dockerDisk == nil { try? await Task.sleep(for: .milliseconds(100)) }
             check("shows what fills Docker's space", model.dockerDisk?.usage.count == 4 && (model.dockerDisk?.reclaimable ?? 0) > 2e9)

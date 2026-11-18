@@ -206,6 +206,13 @@ enum Page: Hashable {
 }
 
 /// Logs to empty on the server, waiting for confirmation.
+/// Containers to update, waiting for confirmation.
+struct UpdateRequest: Identifiable {
+    var names: [String]
+    var title: String
+    var id: String { names.joined(separator: ",") }
+}
+
 struct ClearRequest: Identifiable {
     var names: [String]
     var title: String
@@ -255,6 +262,10 @@ final class AppModel {
     /// Clearing logs on the server, waiting for confirmation.
     var confirmClear: ClearRequest?
     private(set) var clearing = false
+    /// Updating images, waiting for confirmation.
+    var confirmUpdate: UpdateRequest?
+    /// Containers whose image is being updated now.
+    private(set) var updating: Set<String> = []
     /// Notable events of the last day (starts, crashes, health), newest first.
     private(set) var recentEvents: [DockerEvent] = []
     /// Known noise, saved on this Mac.
@@ -596,6 +607,49 @@ final class AppModel {
     var containersWithUpdates: [Container] {
         guard let updates = hostInfo?.updates else { return [] }
         return containers.filter { updates.hasUpdate($0.image) }
+    }
+
+    /// Asks first: the container is down while it's recreated.
+    func requestUpdate(_ names: [String]? = nil) {
+        let names = names ?? containersWithUpdates.map(\.name)
+        guard !names.isEmpty else { return }
+        confirmUpdate = UpdateRequest(names: names, title: names.count == 1 ? names[0] : String(localized: "\(names.count) containers"))
+    }
+
+    func canUpdate(_ container: Container? = nil) -> Bool {
+        guard let container = container ?? selected, !busy.contains(container.name) else { return false }
+        return hostInfo?.updates?.hasUpdate(container.image) == true
+    }
+
+    /// Updates each container in turn with Unraid's own update, then checks
+    /// that each is back and up to date.
+    func updateImages(_ names: [String]) async {
+        updating.formUnion(names)
+        var failed: [String] = []
+        for name in names {
+            busy.insert(name)
+            do {
+                try await client.updateImage(of: name)
+            } catch {
+                failed.append(error.localizedDescription)
+            }
+            busy.remove(name)
+            updating.remove(name)
+        }
+        try? await loadContainers()
+        if let info = try? await client.hostInfo() { hostInfo = info }
+        if failed.isEmpty {
+            let left = containersWithUpdates.map(\.name).filter(names.contains)
+            if !left.isEmpty {
+                failed.append(String(localized: "Unraid didn't update \(left.formatted()). Its Docker page shows why."))
+            }
+        }
+        if !failed.isEmpty { actionError = failed.joined(separator: "\n") }
+        // A new container: its log starts over.
+        if let selection, names.contains(selection) {
+            log(for: selection).reload(client: client, tail: ServerSettings.tail, since: nil)
+            await inspect(selection)
+        }
     }
 
     // MARK: Icons

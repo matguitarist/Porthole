@@ -67,6 +67,9 @@ struct PortholeApp: App {
                 Button("Restart", systemImage: "arrow.clockwise") { model.request(.restart) }
                     .keyboardShortcut("r", modifiers: [.command, .option])
                     .disabled(!model.canPerform(.restart))
+                Button("Update…", systemImage: "arrow.down.circle") { model.requestUpdate([model.selection ?? ""]) }
+                    .keyboardShortcut("u", modifiers: [.command, .option])
+                    .disabled(!model.canUpdate())
                 Divider()
                 Button("Show Warnings and Errors of the Last Day", systemImage: "exclamationmark.triangle") {
                     if let name = model.selection { model.open(name, problemsOnly: true) }

@@ -59,3 +59,14 @@ struct ActivityAndUpdatesTests {
         #expect(load.networkOut == [100])
     }
 }
+
+@Suite("Updating a container")
+struct UpdateCommandTests {
+    @Test("Unraid's update runs detached, with the name quoted, then checks the container is back")
+    func command() {
+        let command = ImageUpdates.updateCommand("it's")
+        #expect(command.contains("setsid nohup $u 'it'\\''s' >/dev/null 2>&1 </dev/null & wait $!"))
+        #expect(command.contains("docker inspect 'it'\\''s'"))
+        #expect(command.hasPrefix("u=/usr/local/emhttp/plugins/dynamix.docker.manager/scripts/update_container; [ -x $u ]"))
+    }
+}
