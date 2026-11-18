@@ -44,6 +44,19 @@ struct LiveTests {
         print("DOCKERD", load.dockerdCPU, load.dockerdUptime ?? -1)
         #expect(load.dockerdCPU.count == 1)
         #expect((load.dockerdUptime ?? 0) > 0)
+        print("ACTIVITY", load.networkIn, load.networkOut, load.diskRead, load.diskWrite, load.ioWait)
+        #expect(load.networkIn.count == 1 && load.diskRead.count == 1 && load.ioWait.count == 1)
+        #expect((load.networkIn.first ?? 0) > 0)
+    }
+
+    @Test("Unraid's update check matches the containers' images")
+    func updates() async throws {
+        let docker = SSHDocker(target: "root@192.168.40.210", identityFile: "~/.ssh/id_ed25519_homeserver")
+        let info = try await docker.hostInfo()
+        let updates = try #require(info.updates)
+        let containers = try await docker.containers()
+        print("UPDATES", updates.available.sorted(), containers.filter { updates.hasUpdate($0.image) }.map(\.name))
+        #expect(updates.checked != nil)
     }
 
     @Test("The problem scan knows when Docker started")

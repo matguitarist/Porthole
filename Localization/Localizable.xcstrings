@@ -179,6 +179,16 @@
         }
       }
     },
+    "%@/s": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@/s"
+          }
+        }
+      }
+    },
     "%@/s, about %@ left": {
       "localizations": {
         "fr": {
@@ -521,6 +531,16 @@
         }
       }
     },
+    "**Updates** lists the containers whose image has a newer version, from Unraid's own update check. Click one to update it on Unraid's Docker page.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "**Mises à jour** liste les conteneurs dont l’image a une version plus récente, selon la vérification d’Unraid. Cliquez sur l’un d’eux pour le mettre à jour dans la page Docker d’Unraid."
+          }
+        }
+      }
+    },
     "**Warnings and Errors** reads the last 24 hours of every container's log. The chart shows them per hour; hold the pointer over an hour for its counts. Click a row to see that container's warnings and errors.": {
       "localizations": {
         "fr": {
@@ -617,6 +637,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "500"
+          }
+        }
+      }
+    },
+    "A newer %@ is out. Click to update it on Unraid's Docker page.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une version plus récente de %@ est sortie. Cliquez pour la mettre à jour dans la page Docker d’Unraid."
           }
         }
       }
@@ -913,6 +943,16 @@
         }
       }
     },
+    "Checked %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vérifié %@"
+          }
+        }
+      }
+    },
     "Checked at every scan (Settings > General)": {
       "localizations": {
         "fr": {
@@ -1123,6 +1163,26 @@
         }
       }
     },
+    "Data read from and written to every disk over the last %@.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Données lues et écrites sur tous les disques au cours des %@ dernières."
+          }
+        }
+      }
+    },
+    "Data through the server's network cards over the last %@, received and sent together": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Données passées par les cartes réseau du serveur au cours des %@ dernières, reçues et envoyées ensemble"
+          }
+        }
+      }
+    },
     "Disabled": {
       "localizations": {
         "fr": {
@@ -1139,6 +1199,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Disque %lld"
+          }
+        }
+      }
+    },
+    "Disk Activity": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activité des disques"
           }
         }
       }
@@ -1673,6 +1743,16 @@
         }
       }
     },
+    "In %@  Out %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reçu %@  Envoyé %@"
+          }
+        }
+      }
+    },
     "In **Settings › Alerts**, choose the alerts you want and add Gotify to get them on your phone too. Each alert waits 15 minutes before it repeats.": {
       "localizations": {
         "fr": {
@@ -2029,6 +2109,16 @@
         }
       }
     },
+    "Network": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réseau"
+          }
+        }
+      }
+    },
     "New disk, not in use yet": {
       "localizations": {
         "fr": {
@@ -2185,6 +2275,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Ouvrir la page web du serveur"
+          }
+        }
+      }
+    },
+    "Open Unraid's Docker Page": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ouvrir la page Docker d’Unraid"
           }
         }
       }
@@ -2435,6 +2535,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Lu à %@"
+          }
+        }
+      }
+    },
+    "Read %@  Write %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lu %@  Écrit %@"
           }
         }
       }
@@ -3045,12 +3155,22 @@
         }
       }
     },
-    "The **Overview** (⌘0) is the server at a glance: CPU, memory, containers, and how long it has been up.": {
+    "The **Overview** (⌘0) is the server at a glance: CPU, memory, network, disk activity, containers, and how long it has been up. When the CPU waits on the disks a lot, **Disk Activity** says so: a parity check or the mover is slowing things down.": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "L’**Aperçu** (⌘0) montre le serveur d’un coup d’œil : processeur, mémoire, conteneurs et depuis quand il tourne."
+            "value": "L’**Aperçu** (⌘0) montre le serveur d’un coup d’œil : processeur, mémoire, réseau, activité des disques, conteneurs et depuis quand il tourne. Quand le processeur attend beaucoup les disques, **Activité des disques** le signale : une vérification de parité ou le mover ralentit tout."
+          }
+        }
+      }
+    },
+    "The CPU spends %@ of its time waiting on the disks; above %lld%%, a parity check or the mover is slowing the containers down.": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le processeur passe %@ de son temps à attendre les disques ; au-delà de %lld %%, une vérification de parité ou le mover ralentit les conteneurs."
           }
         }
       }
@@ -3195,12 +3315,32 @@
         }
       }
     },
+    "Update ready": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mise à jour prête"
+          }
+        }
+      }
+    },
     "Updates": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
             "value": "Mises à jour"
+          }
+        }
+      }
+    },
+    "Updates (%lld)": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mises à jour (%lld)"
           }
         }
       }
@@ -3231,6 +3371,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Volumes"
+          }
+        }
+      }
+    },
+    "Waiting on disks %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attente des disques %@"
           }
         }
       }

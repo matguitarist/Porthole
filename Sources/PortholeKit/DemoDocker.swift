@@ -125,7 +125,9 @@ public actor DemoDocker: DockerClient {
             .init(name: "disk2", type: "Data", temperature: 52),
             .init(name: "disk3", type: "Data", spunDown: true),
             .init(name: "cache", type: "Cache", temperature: 54, rotational: false),
-        ], lastCheck: .init(finished: now.addingTimeInterval(-30 * 3600), duration: 21_081, errors: 0, exit: 0)))
+        ], lastCheck: .init(finished: now.addingTimeInterval(-30 * 3600), duration: 21_081, errors: 0, exit: 0)),
+        updates: ImageUpdates(available: ["louislam/uptime-kuma:2", "syncthing/syncthing:latest"],
+                              checked: now.addingTimeInterval(-5 * 3600)))
     }
 
     public func dockerDisk() async throws -> DockerDisk {
@@ -145,6 +147,7 @@ public actor DemoDocker: DockerClient {
             let task = Task {
                 var round = 0
                 var busy = 1_000.0, total = 10_000.0
+                var received = 9e11, sent = 3e11, read = 4e8, written = 2e8
                 while !Task.isCancelled {
                     let share = 0.12 + 0.08 * sin(Double(round) / 4)
                     busy += 800 * share
@@ -154,6 +157,12 @@ public actor DemoDocker: DockerClient {
                     continuation.yield("@load 1.12 0.98 0.87 2/812 1234")
                     continuation.yield("@up \(523_800 + 2 * round)")
                     continuation.yield("@dockerd 100 \(9_000 + 7 * round) \(3_000 + 2 * round) \((523_800 - 7_200) * 100)")
+                    received += 2 * (1_800_000 + 1_400_000 * sin(Double(round) / 5))
+                    sent += 2 * (420_000 + 300_000 * sin(Double(round) / 3))
+                    read += 2 * (24_000 + 20_000 * sin(Double(round) / 7))
+                    written += 2 * (9_000 + 8_000 * cos(Double(round) / 4))
+                    continuation.yield("@net \(Int(received)) \(Int(sent))")
+                    continuation.yield("@io \(Int(read)) \(Int(written))")
                     continuation.yield("@end")
                     round += 1
                     try? await Task.sleep(for: round < 60 ? .milliseconds(10) : .seconds(2))

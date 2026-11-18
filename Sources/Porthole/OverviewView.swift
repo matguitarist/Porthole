@@ -25,6 +25,7 @@ struct OverviewView: View {
                             .frame(maxWidth: .infinity)
                             VStack(alignment: .leading, spacing: Space.xxl) {
                                 StorageSection(columns: 2)
+                                UpdatesSection()
                                 ArraySection()
                                 DockerSpace()
                                 EventList()
@@ -34,6 +35,7 @@ struct OverviewView: View {
                     } else {
                         StorageSection(columns: nil)
                         AttentionSection()
+                        UpdatesSection()
                         ProblemList()
                         EventList()
                         BusiestList()
@@ -72,9 +74,11 @@ struct ServerTiles: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        // Four across, stretched, whenever they fit; fewer on a narrow window.
+        // Six across, stretched, whenever they fit; then two rows of three; fewer on a narrow window.
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .top, spacing: Space.md) { tiles }
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 176), spacing: Space.md), count: 3),
+                      alignment: .leading, spacing: Space.md) { tiles }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 200), spacing: Space.md)], alignment: .leading, spacing: Space.md) { tiles }
         }
     }
@@ -104,6 +108,25 @@ struct ServerTiles: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             .help("Memory in use (not counting caches) over the last \(Format.window(load.memoryUsed.count))")
+            Tile(title: "Network", symbol: "network") {
+                BigNumber(load.network.last.map(Format.rate) ?? "—")
+                Sparkline(values: load.network).frame(height: 28)
+                Text(load.networkIn.isEmpty ? " " : "In \(Format.rate(load.networkIn.last ?? 0))  Out \(Format.rate(load.networkOut.last ?? 0))")
+                    .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+            }
+            .help("Data through the server's network cards over the last \(Format.window(load.network.count)), received and sent together")
+            Tile(title: "Disk Activity", symbol: "internaldrive") {
+                BigNumber(load.disk.last.map(Format.rate) ?? "—")
+                Sparkline(values: load.disk).frame(height: 28)
+                if let wait = load.ioWait.last, wait >= HostLoad.ioWaitHigh {
+                    Label("Waiting on disks \(Format.percent(wait))", systemImage: "exclamationmark.triangle.fill")
+                        .font(.caption.monospacedDigit()).foregroundStyle(.orange)
+                } else {
+                    Text(load.diskRead.isEmpty ? " " : "Read \(Format.rate(load.diskRead.last ?? 0))  Write \(Format.rate(load.diskWrite.last ?? 0))")
+                        .font(.caption.monospacedDigit()).foregroundStyle(.secondary)
+                }
+            }
+            .help(diskHelp(load))
             Tile(title: "Containers", symbol: "shippingbox") {
                 BigNumber(String(localized: "\(running) running"))
                 Spacer(minLength: 0)
@@ -126,6 +149,12 @@ struct ServerTiles: View {
 }
 
 extension ServerTiles {
+    func diskHelp(_ load: HostLoad) -> String {
+        let all = String(localized: "Data read from and written to every disk over the last \(Format.window(load.disk.count)).")
+        guard let wait = load.ioWait.last else { return all }
+        return all + " " + String(localized: "The CPU spends \(Format.percent(wait)) of its time waiting on the disks; above \(Int(HostLoad.ioWaitHigh))%, a parity check or the mover is slowing the containers down.")
+    }
+
     func cpuHelp(_ load: HostLoad) -> String {
         let all = String(localized: "CPU over the last \(Format.window(load.cpu.count)), all \(model.hostInfo?.cores ?? 1) cores together. Load is the 1, 5 and 15 minute average.")
         guard let docker = load.dockerdCPU.last else { return all }
@@ -362,6 +391,44 @@ struct DiskRow: View {
         }
         .padding(.vertical, Space.sm)
         .help(disk.rotational ? String(localized: "Hard disks are hot from \(disk.hotFrom) °C") : String(localized: "SSDs are hot from \(disk.hotFrom) °C"))
+    }
+}
+
+/// Containers whose image has a newer version, from Unraid's own update check.
+/// A row opens Unraid's Docker page, where the update is applied.
+struct UpdatesSection: View {
+    @Environment(AppModel.self) private var model
+
+    var body: some View {
+        let containers = model.containersWithUpdates
+        if !containers.isEmpty {
+            VStack(alignment: .leading, spacing: Space.sm) {
+                HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
+                    SectionTitle("Updates (\(containers.count))")
+                    if let checked = model.hostInfo?.updates?.checked {
+                        Text("Checked \(checked.formatted(.relative(presentation: .named)))")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                }
+                GroupBox {
+                    VStack(spacing: 0) {
+                        ForEach(Array(containers.enumerated()), id: \.element.id) { index, container in
+                            if index > 0 { Divider() }
+                            OverviewRow(container: container, detail: container.image, opensWeb: true,
+                                        action: { NSWorkspace.shared.open(Links.unraidDocker) }) {
+                                Label("Update ready", systemImage: "arrow.down.circle")
+                                    .font(.callout).foregroundStyle(Palette.accentText)
+                            }
+                            .help("A newer \(container.image) is out. Click to update it on Unraid's Docker page.")
+                            .contextMenu {
+                                Button("Open Unraid's Docker Page") { NSWorkspace.shared.open(Links.unraidDocker) }
+                                Button("Show Whole Log") { model.open(container.name) }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -693,6 +760,8 @@ struct BiggestLogs: View {
 struct OverviewRow<Trailing: View>: View {
     let container: Container
     var detail: String?
+    /// Opens a page in the browser rather than in Porthole.
+    var opensWeb = false
     let action: () -> Void
     @ViewBuilder let trailing: Trailing
 
@@ -708,7 +777,7 @@ struct OverviewRow<Trailing: View>: View {
                 }
                 Spacer(minLength: Space.md)
                 trailing
-                Image(systemName: "chevron.right").font(.caption).foregroundStyle(.tertiary)
+                Image(systemName: opensWeb ? "arrow.up.forward" : "chevron.right").font(.caption).foregroundStyle(.tertiary)
             }
             .padding(.vertical, Space.sm)
             .contentShape(.rect)

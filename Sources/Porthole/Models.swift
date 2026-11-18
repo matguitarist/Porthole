@@ -592,6 +592,12 @@ final class AppModel {
         return Date(timeIntervalSinceNow: -uptime)
     }
 
+    /// Containers whose image Unraid found an update for, by name.
+    var containersWithUpdates: [Container] {
+        guard let updates = hostInfo?.updates else { return [] }
+        return containers.filter { updates.hasUpdate($0.image) }
+    }
+
     // MARK: Icons
 
     /// The first of the container's icon sources that loaded.

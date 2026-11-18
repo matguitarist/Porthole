@@ -162,3 +162,21 @@ As the user, I choose Help › Porthole Help (⌘?) and read how the Overview, a
 Screens: help-overview, help-shortcuts
 Built: a window of its own (`HelpView.swift`), ten topics; `tools/snap.sh` captures help-overview and help-shortcuts.
 Status: done
+
+### S-021 Image updates available
+As the user, I see Updates (N) on the Overview: the containers whose image Unraid's own update check says has a newer version; a row opens Unraid's Docker page to apply it.
+Screens: overview
+Acceptance:
+- [unit] Unraid's update file parses; only "false" is an update; image names match Unraid's ("nginx" is "library/nginx:latest").
+- [self] The sample's uptime-kuma and syncthing have updates.
+Built: read with the host info every minute from `/var/lib/docker/unraid-update-status.json`; nothing shows on a server without it.
+Status: done
+
+### S-022 Network, disk activity and I/O wait
+As the user, I see the server's network and disk traffic beside CPU and memory, and Disk Activity warns when the CPU spends 20% or more of its time waiting on the disks (a parity check or the mover).
+Screens: overview
+Acceptance:
+- [unit] Rates per second from /proc/net/dev (network cards only) and /proc/diskstats (whole disks only); counters that go back start over; I/O wait isn't counted as busy.
+- [self] The sample shows network and disk activity.
+Built: part of the 2-second host reading; six tiles across, or two rows of three.
+Status: done

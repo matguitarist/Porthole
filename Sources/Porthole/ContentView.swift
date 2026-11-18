@@ -389,6 +389,12 @@ enum Format {
         ByteCountFormatter.string(fromByteCount: Int64(value), countStyle: .memory)
     }
 
+    /// "1.2 MB/s": network and disk speeds.
+    static func rate(_ bytesPerSecond: Double) -> String {
+        let amount = ByteCountFormatter.string(fromByteCount: Int64(bytesPerSecond), countStyle: .decimal)
+        return String(localized: "\(amount)/s")
+    }
+
     /// Samples arrive every two seconds.
     static func window(_ count: Int) -> String {
         let seconds = count * 2

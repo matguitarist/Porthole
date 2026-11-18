@@ -30,6 +30,10 @@ enum SelfTest {
             check("opens on the overview", model.page == .overview)
             for _ in 0..<50 where model.problemsScanned == nil || model.hostLoad.cpu.isEmpty || model.hostInfo == nil { try? await Task.sleep(for: .milliseconds(100)) }
             check("the overview shows the server's load", !model.hostLoad.cpu.isEmpty && model.hostLoad.memoryTotal > 0)
+            for _ in 0..<50 where model.hostLoad.network.isEmpty || model.hostLoad.disk.isEmpty { try? await Task.sleep(for: .milliseconds(100)) }
+            check("shows network and disk activity, and I/O wait", !model.hostLoad.network.isEmpty && !model.hostLoad.disk.isEmpty && !model.hostLoad.ioWait.isEmpty)
+            check("lists the containers with an image update", Set(model.containersWithUpdates.map(\.name)) == ["uptime-kuma", "syncthing"],
+                  "\(model.containersWithUpdates.map(\.name))")
             check("and its disks, Docker's too", model.hostInfo?.disks.count == 4 && model.hostInfo?.disks.last?.isDocker == true)
             for _ in 0..<50 where model.dockerDisk == nil { try? await Task.sleep(for: .milliseconds(100)) }
             check("shows what fills Docker's space", model.dockerDisk?.usage.count == 4 && (model.dockerDisk?.reclaimable ?? 0) > 2e9)
