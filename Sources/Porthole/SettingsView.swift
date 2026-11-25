@@ -294,73 +294,27 @@ struct UpdateSettingsForm: View {
 
 /// Porthole's language: the Mac's, or one of its own, from the next launch.
 struct LanguageSection: View {
-    @State private var language = AppLanguage.saved
+    @State private var language = AppLanguage.current
 
     var body: some View {
         Section {
             Picker("Language", selection: $language) {
-                ForEach(AppLanguage.allCases) { option in
-                    option.label.tag(option)
+                Text("Same as the Mac").tag(AppLanguage.system)
+                // Every language the app is translated into, each named in itself.
+                ForEach(AppLanguage.available, id: \.self) { option in
+                    Text(verbatim: option.name).tag(option)
                 }
             }
-            .onChange(of: language) { AppLanguage.save(language) }
+            .onChange(of: language) { language.apply() }
             if language != AppLanguage.atLaunch {
                 LabeledContent {
-                    Button("Restart Now") { AppLanguage.restart() }
+                    Button("Restart Now") { AppLanguage.relaunch() }
                 } label: {
                     Text("Porthole changes its language when it opens again.")
                         .foregroundStyle(.secondary)
                 }
             }
         }
-    }
-}
-
-/// The app's own language setting: AppleLanguages in Porthole's defaults, read by macOS at launch.
-enum AppLanguage: String, CaseIterable, Identifiable {
-    case system, en, fr
-
-    var id: String { rawValue }
-
-    @ViewBuilder var label: some View {
-        switch self {
-        case .system: Text("Same as the Mac")
-        // Each language in its own words, the same in every language.
-        case .en: Text(verbatim: "English")
-        case .fr: Text(verbatim: "Français")
-        }
-    }
-
-    private static let key = "AppleLanguages"
-
-    /// Porthole's own choice, not the Mac's list (which UserDefaults also answers with).
-    static var saved: AppLanguage {
-        guard let id = Bundle.main.bundleIdentifier,
-              let list = UserDefaults.standard.persistentDomain(forName: id)?[key] as? [String],
-              let first = list.first else { return .system }
-        return AppLanguage(rawValue: String(first.prefix(2))) ?? .system
-    }
-
-    /// The choice when Porthole opened: a different one needs a restart.
-    static let atLaunch = saved
-
-    static func save(_ language: AppLanguage) {
-        guard !Store.isOverridden else { return }
-        if language == .system {
-            UserDefaults.standard.removeObject(forKey: key)
-        } else {
-            UserDefaults.standard.set([language.rawValue], forKey: key)
-        }
-    }
-
-    /// Quits and opens again a moment later, once this copy has gone.
-    static func restart() {
-        guard !Store.isOverridden else { return }
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/bin/sh")
-        task.arguments = ["-c", "sleep 1; /usr/bin/open \"$0\"", Bundle.main.bundlePath]
-        try? task.run()
-        NSApp.terminate(nil)
     }
 }
 
