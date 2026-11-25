@@ -4,21 +4,14 @@ import Testing
 @testable import PortholeKit
 
 /// The guard runs as the server's shell would run it: `bash -c`, with stdin
-/// the SSH channel. Here the channel is a pipe this test holds open and closes
-/// by itself: ProcessKit closes a command's stdin only while it stops it, which
-/// would test the signal, not the guard.
+/// the SSH channel. Here the channel is an open stdin that the test closes with
+/// `closeInput()`, without stopping the command: a stop would test the signal,
+/// not the guard.
 @Suite("Remote commands end with their channel")
 struct HangupGuardTests {
-    private func start(_ command: String) throws -> (Process, Pipe) {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/bash")
-        process.arguments = ["-c", SSHDocker.hangupGuard(command)]
-        let stdin = Pipe()
-        process.standardInput = stdin
-        process.standardOutput = FileHandle.nullDevice
-        process.standardError = FileHandle.nullDevice
-        try process.run()
-        return (process, stdin)
+    private func start(_ command: String) throws -> Shell.RunningCommand {
+        try Shell.start("/bin/bash", ["-c", SSHDocker.hangupGuard(command)],
+                        options: Shell.Options(input: .open, stdout: .discard, stderr: .discard))
     }
 
     private func running(_ marker: String) -> Bool {
@@ -37,27 +30,29 @@ struct HangupGuardTests {
     @Test("A command that writes nothing stops when the channel closes")
     func quietCommandStopsOnHangup() async throws {
         let marker = "3141.5926"   // a sleep no one else runs
-        let (process, stdin) = try start("sleep \(marker) | cat")
+        let command = try start("sleep \(marker) | cat")
+        defer { command.stop() }
         #expect(await waitUntil(3) { running(marker) })
-        try stdin.fileHandleForWriting.close()
-        #expect(await waitUntil(3) { !process.isRunning && !running(marker) })
+        command.closeInput()
+        #expect(await waitUntil(3) { !command.isRunning && !running(marker) })
+        #expect(command.output?.cancelled != true)
     }
 
     @Test("A command that ends by itself ends the session with its status")
     func finishedCommandKeepsItsStatus() async throws {
-        let (process, stdin) = try start("echo done; exit 3")
-        #expect(await waitUntil(3) { !process.isRunning })
-        #expect(process.terminationStatus == 3)
-        try? stdin.fileHandleForWriting.close()
+        let command = try start("echo done; exit 3")
+        defer { command.stop() }
+        #expect(await waitUntil(3) { !command.isRunning })
+        #expect(await command.wait().status == 3)
     }
 
     @Test("The command doesn't read the channel")
     func commandStdinIsNull() async throws {
         // `cat` with the channel as stdin would wait for it to close.
-        let (process, stdin) = try start("cat")
-        #expect(await waitUntil(3) { !process.isRunning })
-        #expect(process.terminationStatus == 0)
-        try? stdin.fileHandleForWriting.close()
+        let command = try start("cat")
+        defer { command.stop() }
+        #expect(await waitUntil(3) { !command.isRunning })
+        #expect(await command.wait().status == 0)
     }
 }
 

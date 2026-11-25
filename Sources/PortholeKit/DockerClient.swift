@@ -256,8 +256,11 @@ public actor SSHDocker: DockerClient {
             let task = Task.detached {
                 do {
                     try await self.ensureMaster()
+                    // Docker's own \r (progress, Windows line ends) stays inside a line.
+                    var options = Self.sshOptions(input: .open, stderr: .merged)
+                    options.lineBreaks = .newline
                     let lines = Shell.lines("/usr/bin/ssh", self.sshArguments(Self.hangupGuard(remote)),
-                                            options: Self.sshOptions(input: .open, stderr: .merged))
+                                            options: options)
                     for try await line in lines { continuation.yield(line) }
                     continuation.finish()
                 } catch where Task.isCancelled {
@@ -277,16 +280,17 @@ public actor SSHDocker: DockerClient {
 
     /// Runs ssh and returns its output; throws with its error text when it fails.
     /// With `background`, ssh forks a master that keeps its output open, so
-    /// its errors go to a file instead of a pipe that would never close.
+    /// its errors go to a file instead of a pipe that would never close, and
+    /// ProcessKit reads that file back into the output's stderr.
     static func run(_ arguments: [String], background: Bool = false) async throws -> String {
         let errorFile = FileManager.default.temporaryDirectory.appending(path: "porthole-ssh-\(UUID().uuidString).txt")
         defer { if background { try? FileManager.default.removeItem(at: errorFile) } }
-        let output = try await Shell.run("/usr/bin/ssh", arguments,
-                                         options: sshOptions(stdout: background ? .discard : .capture,
-                                                             stderr: background ? .file(errorFile) : .capture))
+        var options = sshOptions(stdout: background ? .discard : .capture,
+                                 stderr: background ? .file(errorFile) : .capture)
+        options.readsBackStderr = background
+        let output = try await Shell.run("/usr/bin/ssh", arguments, options: options)
         guard output.succeeded else {
-            let errors = background ? (try? Data(contentsOf: errorFile)) ?? Data() : output.stderr
-            throw DockerError.command(status: output.status, message: String(decoding: errors, as: UTF8.self))
+            throw DockerError.command(status: output.status, message: output.errorText)
         }
         return output.text
     }
