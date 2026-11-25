@@ -140,6 +140,12 @@ enum SelfTest {
             check("a crash sends one alert, not two", model.notifier.sent.count == sentBefore + 1
                   && model.notifier.sent.last?.title.hasPrefix("seerr") == true)
 
+            // The Gotify token: in memory in a test run, never in the person's Keychain.
+            Keychain.gotifyToken = "selftest-token"
+            check("the Gotify token is kept, in memory in a test run", Keychain.gotifyToken == "selftest-token")
+            Keychain.gotifyToken = ""
+            check("an empty token removes it", Keychain.gotifyToken == nil)
+
             print(failures == 0 ? "SELFTEST PASS \(count) checks" : "SELFTEST FAIL \(failures) of \(count) checks")
             finish(code: failures == 0 ? 0 : 1)
         }

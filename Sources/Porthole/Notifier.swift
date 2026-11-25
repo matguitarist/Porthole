@@ -1,6 +1,6 @@
+import FileKit
 import Foundation
 import PortholeKit
-import Security
 import UserNotifications
 
 /// Tells you when something goes wrong: a container crashes, runs out of
@@ -102,25 +102,14 @@ final class Notifier {
     }
 }
 
-/// The Gotify app token, kept in the login keychain.
+/// The Gotify app token, kept in the login keychain as one item with no
+/// account; in memory in test runs, so they never touch the person's Keychain.
 enum Keychain {
     private static let service = "com.mathieuares.porthole.gotify"
+    private static let store = Store.isOverridden ? FileKit.Keychain.inMemory(service: service) : FileKit.Keychain(service: service)
 
     static var gotifyToken: String? {
-        get {
-            var item: CFTypeRef?
-            let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service,
-                                        kSecReturnData as String: true]
-            guard SecItemCopyMatching(query as CFDictionary, &item) == errSecSuccess, let data = item as? Data else { return nil }
-            return String(decoding: data, as: UTF8.self)
-        }
-        set {
-            let query: [String: Any] = [kSecClass as String: kSecClassGenericPassword, kSecAttrService as String: service]
-            SecItemDelete(query as CFDictionary)
-            guard let newValue, !newValue.isEmpty else { return }
-            var add = query
-            add[kSecValueData as String] = Data(newValue.utf8)
-            SecItemAdd(add as CFDictionary, nil)
-        }
+        get { store.string(for: nil) }
+        set { try? store.set(newValue, for: nil) }
     }
 }

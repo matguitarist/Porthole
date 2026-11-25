@@ -1,6 +1,15 @@
 {
-  "originHash" : "c1afcad3920751545bb605facf325128c3132d78d2819cd8bf4dc23d9fcdedff",
+  "originHash" : "928a6055e9b5af6a93f508803145fa055e8acfb946b29517b8693b8c63280be5",
   "pins" : [
+    {
+      "identity" : "filekit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/matguitarist/FileKit",
+      "state" : {
+        "revision" : "ca394fee2bd07f14e05924340e9bddf2f3ebfe30",
+        "version" : "0.1.0"
+      }
+    },
     {
       "identity" : "logkit",
       "kind" : "remoteSourceControl",
