@@ -1,4 +1,5 @@
 import AppKit
+import AppTestKit
 import LogKit
 import PortholeKit
 
@@ -6,32 +7,19 @@ import PortholeKit
 /// prints PASS or FAIL per check, and quits with exit code 0 or 1.
 ///   APP_STORE=/tmp/Porthole-self.store ~/Applications/Porthole.app/Contents/MacOS/Porthole --selftest
 /// (tools/selftest.sh does this.) Add a check for every story with logic.
-@MainActor
-enum SelfTest {
-    static var requested: Bool { CommandLine.arguments.contains("--selftest") }
-    /// Read by AppDelegate.applicationWillTerminate.
-    static var exitCode: Int32 = 0
-    private static var failures = 0
-    private static var count = 0
-
+/// AppTestKit prints the lines, refuses without APP_STORE in /tmp, and quits with the exit code.
+extension SelfTest {
     static func runIfRequested(model: AppModel) {
-        guard requested else { return }
-        // Print each line at once, so a crash keeps the lines before it.
-        setvbuf(stdout, nil, _IOLBF, 0)
-        guard Store.isOverridden else {
-            print("SELFTEST refused: set APP_STORE to a file in /tmp")
-            finish(code: 1)
-            return
-        }
-        Task {
+        run {
             // ContentView connects on its own; wait for the sample containers.
-            for _ in 0..<50 where model.connection != .connected { try? await Task.sleep(for: .milliseconds(100)) }
+            _ = await wait { model.connection == .connected }
             check("connects and lists the sample containers", model.containers.count == 7, "\(model.containers.count)")
             check("opens on the overview", model.page == .overview)
-            for _ in 0..<50 where model.problemsScanned == nil || model.hostLoad.cpu.isEmpty || model.hostInfo == nil { try? await Task.sleep(for: .milliseconds(100)) }
+            _ = await wait { model.problemsScanned != nil && !model.hostLoad.cpu.isEmpty && model.hostInfo != nil }
             check("the overview shows the server's load", !model.hostLoad.cpu.isEmpty && model.hostLoad.memoryTotal > 0)
-            for _ in 0..<50 where model.hostLoad.network.isEmpty || model.hostLoad.disk.isEmpty { try? await Task.sleep(for: .milliseconds(100)) }
-            check("shows network and disk activity, and I/O wait", !model.hostLoad.network.isEmpty && !model.hostLoad.disk.isEmpty && !model.hostLoad.ioWait.isEmpty)
+            await check("shows network and disk activity, and I/O wait", within: .seconds(5)) {
+                !model.hostLoad.network.isEmpty && !model.hostLoad.disk.isEmpty && !model.hostLoad.ioWait.isEmpty
+            }
             check("lists the containers with an image update", Set(model.containersWithUpdates.map(\.name)) == ["uptime-kuma", "syncthing"],
                   "\(model.containersWithUpdates.map(\.name))")
             model.requestUpdate()
@@ -43,7 +31,7 @@ enum SelfTest {
             check("and its menu no longer offers Update", !model.canUpdate(model.containers.first { $0.name == "syncthing" }))
             check("and it is no longer shown as updating", !model.updating.contains("syncthing"))
             check("and its disks, Docker's too", model.hostInfo?.disks.count == 4 && model.hostInfo?.disks.last?.isDocker == true)
-            for _ in 0..<50 where model.dockerDisk == nil { try? await Task.sleep(for: .milliseconds(100)) }
+            _ = await wait { model.dockerDisk != nil }
             check("shows what fills Docker's space", model.dockerDisk?.usage.count == 4 && (model.dockerDisk?.reclaimable ?? 0) > 2e9)
             check("lists the biggest logs, largest first", model.dockerDisk?.biggestLogs(5).map(\.name).prefix(2) == ["syncthing", "mangosd"])
             check("scans every container's log for problems", model.problems.count == 7)
@@ -63,7 +51,7 @@ enum SelfTest {
 
             model.selection = "tautulli"
             let log = model.log(for: "tautulli")
-            for _ in 0..<50 where log.store.entries.count < 6 || log.state == nil { try? await Task.sleep(for: .milliseconds(100)) }
+            _ = await wait { log.store.entries.count >= 6 && log.state != nil }
             check("streams the container's log", log.store.entries.count == 6, "\(log.store.entries.count)")
             check("reads levels from the app's own words", log.store.entries.filter { $0.level == .error }.count == 2)
             check("an unhealthy container gets an insight", log.store.insights.contains { $0.id == ContainerInsights.healthID })
@@ -71,14 +59,13 @@ enum SelfTest {
 
             model.selection = "mangosd"
             let crashed = model.log(for: "mangosd")
-            for _ in 0..<50 where crashed.state == nil { try? await Task.sleep(for: .milliseconds(100)) }
+            _ = await wait { crashed.state != nil }
             check("a crash gets an insight", crashed.store.insights.first?.title.contains("139") == true)
             check("the log keeps following only the selected container", crashed.isFollowing && !log.isFollowing)
             check("a stopped container can start, not stop", model.canPerform(.start) && !model.canPerform(.stop))
 
             model.request(.start)
-            for _ in 0..<50 where model.selected?.isRunning != true { try? await Task.sleep(for: .milliseconds(100)) }
-            check("Start starts it", model.selected?.isRunning == true)
+            await check("Start starts it", within: .seconds(5)) { model.selected?.isRunning == true }
 
             model.request(.stop)
             check("Stop asks first", model.confirmStop == "mangosd" && model.selected?.isRunning == true)
@@ -90,7 +77,7 @@ enum SelfTest {
             check("the filter narrows the list", model.shown.map(\.name) == ["tautulli"])
             model.search = ""
 
-            for _ in 0..<50 where model.stats["seerr"] == nil { try? await Task.sleep(for: .milliseconds(100)) }
+            _ = await wait { model.stats["seerr"] != nil }
             check("usage arrives for running containers", (model.stats["seerr"]?.cpu.count ?? 0) > 0)
             check("the web page comes from Unraid's template",
                   model.webUI(for: model.containers.first { $0.name == "seerr" })?.absoluteString == "http://192.168.40.210:5055"
@@ -100,9 +87,9 @@ enum SelfTest {
             check("finds compose stacks", model.stacks["media"]?.map(\.name).sorted() == ["seerr", "tautulli"])
             model.page = .stack("media")
             let stack = model.stackLog("media")
-            for _ in 0..<50 where Set(stack.store.entries.map(\.source)).count < 2 { try? await Task.sleep(for: .milliseconds(100)) }
-            check("a stack's log merges its containers, with each line's container as source",
-                  Set(stack.store.entries.map(\.source)) == ["seerr", "tautulli"])
+            await check("a stack's log merges its containers, with each line's container as source", within: .seconds(5)) {
+                Set(stack.store.entries.map(\.source)) == ["seerr", "tautulli"]
+            }
 
             // Events from the last day, newest first.
             check("lists the last day's events, newest first",
@@ -145,23 +132,7 @@ enum SelfTest {
             check("the Gotify token is kept, in memory in a test run", Keychain.gotifyToken == "selftest-token")
             Keychain.gotifyToken = ""
             check("an empty token removes it", Keychain.gotifyToken == nil)
-
-            print(failures == 0 ? "SELFTEST PASS \(count) checks" : "SELFTEST FAIL \(failures) of \(count) checks")
-            finish(code: failures == 0 ? 0 : 1)
         }
     }
 
-    private static func check(_ name: String, _ ok: Bool, _ detail: String = "") {
-        count += 1
-        if !ok { failures += 1 }
-        print(ok ? "PASS \(name)" : "FAIL \(name)\(detail.isEmpty ? "" : ": \(detail)")")
-    }
-
-    /// Quits through NSApp.terminate, never exit(), and closes sheets first:
-    /// an open sheet refuses terminate, and the run would wait forever.
-    static func finish(code: Int32) {
-        exitCode = code
-        for window in NSApp.windows { if let sheet = window.attachedSheet { window.endSheet(sheet) } }
-        NSApp.terminate(nil)
-    }
 }

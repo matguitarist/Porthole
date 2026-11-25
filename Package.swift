@@ -9,6 +9,7 @@ let package = Package(
         .package(url: "https://github.com/matguitarist/LogKit", from: "0.6.0"),
         .package(url: "https://github.com/matguitarist/ProcessKit", from: "0.1.1"),
         .package(url: "https://github.com/matguitarist/FileKit", from: "0.1.0"),
+        .package(url: "https://github.com/matguitarist/AppTestKit", from: "0.1.0"),
     ],
     targets: [
         // Rules and data logic with no SwiftUI, so tests run without the app.
@@ -16,7 +17,7 @@ let package = Package(
         .executableTarget(
             name: "Porthole",
             dependencies: ["PortholeKit", .product(name: "LogKitUI", package: "LogKit"), .product(name: "Sparkle", package: "Sparkle"),
-                           .product(name: "FileKit", package: "FileKit")],
+                           .product(name: "FileKit", package: "FileKit"), .product(name: "AppTestKit", package: "AppTestKit")],
             // App code runs on the main thread unless you say otherwise.
             swiftSettings: [.defaultIsolation(MainActor.self)],
             // Sparkle.framework sits in Contents/Frameworks (build.sh copies it).

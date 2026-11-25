@@ -1,3 +1,4 @@
+import AppTestKit
 import LogKitUI
 import PortholeKit
 import SwiftUI

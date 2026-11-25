@@ -1,4 +1,5 @@
 import AppKit
+import AppTestKit
 import PortholeKit
 import SwiftUI
 import UserNotifications
@@ -15,7 +16,13 @@ import UserNotifications
 @main
 struct PortholeApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var delegate
-    @State private var model = AppModel()
+    @State private var model: AppModel
+
+    init() {
+        // An APP_STORE outside /tmp quits at once, before the model reads anything.
+        _ = TestRun.store()
+        _model = State(initialValue: AppModel())
+    }
 
     var body: some Scene {
         Window("Porthole", id: "main") {
@@ -158,16 +165,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, UNUserNotificationCent
     func applicationWillTerminate(_ notification: Notification) {
         // Log, event and stats streams run through the shared SSH connection: closing it ends them.
         (AppModel.current?.client as? SSHDocker)?.disconnectNow()
-        if SelfTest.requested { exit(SelfTest.exitCode) }
+        SelfTest.exitIfRequested()
     }
 }
 
 /// Test mode: APP_STORE set (to a file in /tmp) means sample data and no
 /// saved settings. Porthole keeps no database of its own.
 enum Store {
-    static var isOverridden: Bool {
-        !(ProcessInfo.processInfo.environment["APP_STORE"] ?? "").isEmpty
-    }
+    /// True in a test run (tests, snapshots, self-test). The shared Updater and AppLanguage read it.
+    static var isOverridden: Bool { TestRun.isTestRun() }
 }
 
 /// The menu bar icon, in its own scene so the app's menus updating don't rebuild it.
