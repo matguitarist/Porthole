@@ -25,6 +25,8 @@ enum Snapshot {
                 else if page.hasPrefix("stack-") { model.page = .stack(String(page.dropFirst(6))) }
                 else { model.selection = page }
             }
+            await run.shoot("whats-new", window: { WindowShot.mainWindow()?.attachedSheet },
+                           show: { WhatsNewState.shared.shown = .sample }, hide: { WhatsNewState.shared.shown = nil })
             run.settle = .seconds(0.8)
             await run.shootSettings(tabs: SettingsTab.allCases.map(\.rawValue), open: { openSettings() },
                                     select: { model.settingsTab = SettingsTab(rawValue: $0) ?? .server })

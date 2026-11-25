@@ -28,6 +28,7 @@ struct PortholeApp: App {
         Window("Porthole", id: "main") {
             ContentView()
                 .environment(model)
+                .whatsNew(app: "Porthole", repository: "matguitarist/Porthole")
                 .themed()
                 .overlay { if GridOverlay.enabled { GridOverlay() } }
                 .frame(minWidth: 760, minHeight: 480)

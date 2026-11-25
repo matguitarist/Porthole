@@ -7,6 +7,8 @@ import SwiftUI
 //                     Report a Problem…, Show Log
 //   PageCommands      ⌘1, ⌘2… at the top of View, one per sidebar page, reopening the main window
 //   AboutPanel        the standard About panel with a few lines of credits and links
+//   .whatsNew(…)      on the main window: the first launch of a newer version shows a sheet with
+//                     its release notes (bundled at build time, release-notes/<version>.md)
 // Each app gives its name, its GitHub repository and the hooks it has; what it doesn't give
 // doesn't appear. Menus of its own (Game, Mods, Server, File items) stay in the app.
 // The strings are in each app's Localizable.xcstrings, in English and French.
@@ -264,5 +266,219 @@ enum AboutPanel {
         style.alignment = .center
         text.addAttribute(.paragraphStyle, value: style, range: NSRange(location: 0, length: text.length))
         return text
+    }
+}
+
+
+// MARK: - What's New
+
+/// The notes of the version that just opened, shown once in a sheet the first time a newer
+/// version launches. The notes are bundled at build time (`release-notes/<version>.md` copied
+/// into Contents/Resources/release-notes by build.sh or project.yml), never fetched: a build
+/// without notes for its version shows nothing. A fresh install records its version silently.
+/// Self-test and snapshot runs never show it and never touch the defaults.
+/// Help › What’s New in <App> still opens the latest release on GitHub.
+struct WhatsNew: Identifiable, Equatable {
+    let version: String
+    let notes: String
+    var id: String { version }
+
+    /// The last version that opened, in the app's defaults.
+    static let lastSeenKey = "WhatsNewLastSeenVersion"
+
+    /// True when `current` is newer than `lastSeen`. A fresh install (`lastSeen` nil) is not.
+    static func isNewer(_ current: String, than lastSeen: String?) -> Bool {
+        guard let lastSeen else { return false }
+        return compare(current, lastSeen) == .orderedDescending
+    }
+
+    /// Versions compared number by number: 2.10 > 2.9, 2.4 == 2.4.0.
+    static func compare(_ a: String, _ b: String) -> ComparisonResult {
+        func numbers(_ version: String) -> [Int] {
+            version.split(separator: ".").map { Int($0.prefix { $0.isNumber }) ?? 0 }
+        }
+        let left = numbers(a), right = numbers(b)
+        for index in 0..<max(left.count, right.count) {
+            let l = index < left.count ? left[index] : 0, r = index < right.count ? right[index] : 0
+            if l != r { return l < r ? .orderedAscending : .orderedDescending }
+        }
+        return .orderedSame
+    }
+
+    /// The running app's version.
+    static var currentVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0"
+    }
+
+    /// The notes bundled for `version`, nil when the build has none (or only an empty file).
+    static func bundled(_ version: String, in bundle: Bundle = .main) -> WhatsNew? {
+        guard let url = bundle.url(forResource: version, withExtension: "md", subdirectory: "release-notes"),
+              let text = try? String(contentsOf: url, encoding: .utf8),
+              !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return nil }
+        return WhatsNew(version: version, notes: text)
+    }
+
+    /// A self-test, snapshot or other run on a /tmp store.
+    static var isTestRun: Bool {
+        let environment = ProcessInfo.processInfo.environment
+        return environment["APP_STORE"] != nil || environment["APP_SNAPSHOT"] != nil
+            || CommandLine.arguments.contains("--selftest")
+    }
+
+    /// At launch: records this version as seen, and returns its notes when it is newer than the
+    /// last version seen. Nil on a fresh install, in a test run, or without bundled notes.
+    static func pending(defaults: UserDefaults = .standard) -> WhatsNew? {
+        guard !isTestRun else { return nil }
+        let current = currentVersion
+        // Copies from before What's New recorded nothing; Sparkle's last check tells them from a
+        // fresh install, which never checked yet.
+        let lastSeen = defaults.string(forKey: lastSeenKey)
+            ?? (defaults.object(forKey: "SULastCheckTime") != nil ? "0" : nil)
+        // An older build opened after a newer one keeps the newer one as seen.
+        if let lastSeen, compare(current, lastSeen) == .orderedAscending { return nil }
+        defaults.set(current, forKey: lastSeenKey)
+        return isNewer(current, than: lastSeen) ? bundled(current) : nil
+    }
+
+    /// For snapshots: this version's bundled notes, or a short sample when the build has none.
+    static var sample: WhatsNew {
+        bundled(currentVersion) ?? WhatsNew(version: currentVersion, notes: """
+            ## Sample notes
+
+            - **What’s New** shows the notes of a new version the first time it opens.
+            - Notes come with the app, so nothing is downloaded at launch.
+            """)
+    }
+}
+
+/// Release notes as the sheet shows them: headings, list items and paragraphs, each with its
+/// inline Markdown (bold, italics, code, links).
+enum NotesBlock: Equatable {
+    case heading(String)
+    case item(marker: String, text: String)
+    case paragraph(String)
+
+    static func parse(_ markdown: String) -> [NotesBlock] {
+        var blocks: [NotesBlock] = []
+        var paragraph: [String] = []
+        var previousBlank = true
+        func flush() {
+            if !paragraph.isEmpty { blocks.append(.paragraph(paragraph.joined(separator: " "))) }
+            paragraph = []
+        }
+        for raw in markdown.components(separatedBy: .newlines) {
+            let line = raw.trimmingCharacters(in: .whitespaces)
+            defer { previousBlank = line.isEmpty }
+            if line.isEmpty {
+                flush()
+            } else if line.hasPrefix("#") {
+                flush()
+                blocks.append(.heading(String(line.drop { $0 == "#" }).trimmingCharacters(in: .whitespaces)))
+            } else if line.hasPrefix("- ") || line.hasPrefix("* ") || line.hasPrefix("+ ") {
+                flush()
+                blocks.append(.item(marker: "•", text: String(line.dropFirst(2))))
+            } else if let dot = line.firstIndex(of: "."), dot > line.startIndex, line[..<dot].allSatisfy(\.isNumber),
+                      line[line.index(after: dot)...].hasPrefix(" ") {
+                flush()
+                blocks.append(.item(marker: String(line[...dot]), text: String(line[line.index(dot, offsetBy: 2)...])))
+            } else if paragraph.isEmpty, !previousBlank, case .item(let marker, let text)? = blocks.last {
+                // A list item that wraps onto the next line.
+                blocks[blocks.count - 1] = .item(marker: marker, text: text + " " + line)
+            } else {
+                paragraph.append(line)
+            }
+        }
+        flush()
+        return blocks
+    }
+
+    static func inline(_ text: String) -> AttributedString {
+        (try? AttributedString(markdown: text, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)))
+            ?? AttributedString(text)
+    }
+}
+
+/// The sheet on screen, if any: set by `pending()` at launch, or by a snapshot.
+@MainActor @Observable
+final class WhatsNewState {
+    static let shared = WhatsNewState()
+    var shown: WhatsNew?
+}
+
+extension View {
+    /// On the main window's content: shows What's New once, the first time a newer version opens.
+    func whatsNew(app: String, repository: String) -> some View {
+        modifier(WhatsNewPresenter(app: app, links: RepositoryLinks(repository: repository)))
+    }
+}
+
+private struct WhatsNewPresenter: ViewModifier {
+    let app: String
+    let links: RepositoryLinks
+    @State private var state = WhatsNewState.shared
+
+    func body(content: Content) -> some View {
+        content
+            .task {
+                // pending() records the version, so a reopened window doesn't show it again.
+                if state.shown == nil, let pending = WhatsNew.pending() { state.shown = pending }
+            }
+            .sheet(item: $state.shown) { whatsNew in
+                ReleaseNotesSheet(app: app, whatsNew: whatsNew, links: links)
+            }
+    }
+}
+
+/// "What’s New in <App> <version>", the notes, a link to every release and Continue.
+struct ReleaseNotesSheet: View {
+    let app: String
+    let whatsNew: WhatsNew
+    let links: RepositoryLinks
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Space.lg) {
+            Text("What’s New in \(app) \(whatsNew.version)")
+                .font(.title3.weight(.semibold))
+                .gridProbe("whats-new-title", area: "whats-new")
+            ScrollView {
+                VStack(alignment: .leading, spacing: Space.sm) {
+                    ForEach(Array(NotesBlock.parse(whatsNew.notes).enumerated()), id: \.offset) { index, block in
+                        blockView(block, first: index == 0)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .gridProbe("whats-new-notes", area: "whats-new")
+            }
+            .fitsContent(max: 420)
+            HStack {
+                Link("All Releases", destination: links.home.appending(path: "releases"))
+                    .gridProbe("whats-new-releases", area: "whats-new")
+                Spacer()
+                Button("Continue") { dismiss() }
+                    .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(Space.xl)
+        .frame(width: 480)
+        .gridArea("whats-new")
+        .noInitialFocus()
+    }
+
+    @ViewBuilder
+    private func blockView(_ block: NotesBlock, first: Bool) -> some View {
+        switch block {
+        case .heading(let text):
+            Text(NotesBlock.inline(text))
+                .font(.headline)
+                .padding(.top, first ? 0 : Space.sm)
+        case .item(let marker, let text):
+            HStack(alignment: .firstTextBaseline, spacing: Space.sm) {
+                Text(marker).foregroundStyle(.secondary)
+                Text(NotesBlock.inline(text)).fixedSize(horizontal: false, vertical: true)
+            }
+        case .paragraph(let text):
+            Text(NotesBlock.inline(text)).fixedSize(horizontal: false, vertical: true)
+        }
     }
 }

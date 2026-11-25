@@ -741,6 +741,16 @@
         }
       }
     },
+    "All Releases": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toutes les versions"
+          }
+        }
+      }
+    },
     "Almost full": {
       "localizations": {
         "fr": {
@@ -1149,6 +1159,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Contenu non valide"
+          }
+        }
+      }
+    },
+    "Continue": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer"
           }
         }
       }
@@ -3581,6 +3601,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Nouveautés de %@"
+          }
+        }
+      }
+    },
+    "What’s New in %@ %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouveautés de %1$@ %2$@"
           }
         }
       }

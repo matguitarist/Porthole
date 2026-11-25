@@ -198,6 +198,10 @@ trap restore_version EXIT
 # --- 4. Build --------------------------------------------------------------------
 
 step "build"
+# The app bundles release-notes/<version>.md for What's New: drafted notes go there before the build
+# (a --local run leaves them for the next run to reuse).
+mkdir -p release-notes
+[[ -s $notes_file ]] || cp "$notes" "$notes_file"
 if [[ $BUILD == xcode ]]; then
   if [[ $XCODEGEN == 1 ]]; then
     # The new version reaches the build through the generated project.

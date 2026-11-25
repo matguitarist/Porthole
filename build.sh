@@ -60,6 +60,8 @@ for catalog in "$here"/Localization/*.xcstrings(N); do
   xcrun xcstringstool compile "$catalog" --output-directory "$app/Contents/Resources"
 done
 mkdir -p "$app/Contents/Resources/en.lproj"
+# Release notes: What's New shows release-notes/<version>.md the first time a new version opens.
+[[ -d "$here/release-notes" ]] && cp -R "$here/release-notes" "$app/Contents/Resources/"
 # Sparkle, for automatic updates.
 framework="$scratch/$config/Sparkle.framework"
 if [[ -d "$framework" ]]; then
