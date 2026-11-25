@@ -244,20 +244,6 @@ struct InsightTests {
     }
 }
 
-@Suite("Line reader")
-struct LineReaderTests {
-    @Test("Lines arrive one by one, with CRLF and a last line without a newline")
-    func lines() throws {
-        let pipe = Pipe()
-        pipe.fileHandleForWriting.write(Data("one\r\ntwo\nthr".utf8))
-        pipe.fileHandleForWriting.write(Data("ee".utf8))
-        try pipe.fileHandleForWriting.close()
-        var lines: [String] = []
-        LineReader.read(pipe.fileHandleForReading) { lines.append($0) }
-        #expect(lines == ["one", "two", "three"])
-    }
-}
-
 @Suite("Overview")
 struct OverviewTests {
     @Test("Host info from the server")

@@ -1,4 +1,5 @@
 import Foundation
+import ProcessKit
 
 public enum ContainerAction: String, Sendable, CaseIterable {
     case start, stop, restart
@@ -99,8 +100,8 @@ public actor SSHDocker: DockerClient {
     /// Closes the shared connection at once, ending every stream through it.
     /// For quitting: started commands would otherwise outlive the app.
     public nonisolated func disconnectNow() {
-        guard let child = try? Spawn.launch("/usr/bin/ssh", sshArguments(extra: ["-O", "exit"]), stdout: .null, stderr: .null) else { return }
-        _ = Spawn.wait(child.pid)
+        _ = try? Shell.runSync("/usr/bin/ssh", sshArguments(extra: ["-O", "exit"]),
+                               options: Self.sshOptions(stdout: .discard, stderr: .discard))
     }
 
     /// Closes the shared connection (on quit, or when the address changes).
@@ -249,38 +250,28 @@ public actor SSHDocker: DockerClient {
     }
 
     /// A long-running remote command, line by line. Cancelling the stream ends the
-    /// command, here and on the server (see `hangupGuard`).
+    /// command, here and on the server (see `hangupGuard`): ssh's stdin closes first.
     nonisolated func stream(_ remote: String) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
-            let box = ProcessBox()
             let task = Task.detached {
                 do {
                     try await self.ensureMaster()
-                    let child = try Spawn.launch("/usr/bin/ssh", self.sshArguments(Self.hangupGuard(remote)),
-                                                 stdout: .pipe, stderr: .merged, keepStdinOpen: true)
-                    guard box.set(child.pid, stdin: child.stdin), let out = child.stdout else { return }
-                    // A thread of its own that hands over each line as soon as it
-                    // arrives (FileHandle.bytes waits for a big chunk first).
-                    let status = await withCheckedContinuation { (done: CheckedContinuation<Int32, Never>) in
-                        Thread.detachNewThread {
-                            LineReader.read(out) { continuation.yield($0) }
-                            done.resume(returning: Spawn.wait(child.pid))
-                        }
-                    }
-                    box.finished()
-                    if Task.isCancelled || status == 0 || status > 128 {
-                        continuation.finish()
-                    } else {
-                        continuation.finish(throwing: DockerError.command(status: status, message: ""))
-                    }
+                    let lines = Shell.lines("/usr/bin/ssh", self.sshArguments(Self.hangupGuard(remote)),
+                                            options: Self.sshOptions(input: .open, stderr: .merged))
+                    for try await line in lines { continuation.yield(line) }
+                    continuation.finish()
+                } catch where Task.isCancelled {
+                    continuation.finish()
+                } catch ShellError.failed(let output) where output.status <= 128 {
+                    continuation.finish(throwing: DockerError.command(status: output.status, message: ""))
+                } catch ShellError.failed {
+                    // Ended by a signal: the stream just stops.
+                    continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)
                 }
             }
-            continuation.onTermination = { _ in
-                task.cancel()
-                box.cancel()
-            }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 
@@ -288,43 +279,25 @@ public actor SSHDocker: DockerClient {
     /// With `background`, ssh forks a master that keeps its output open, so
     /// its errors go to a file instead of a pipe that would never close.
     static func run(_ arguments: [String], background: Bool = false) async throws -> String {
-        try await withCheckedThrowingContinuation { continuation in
-            DispatchQueue.global(qos: .userInitiated).async {
-                let errorFile = FileManager.default.temporaryDirectory.appending(path: "porthole-ssh-\(UUID().uuidString).txt")
-                let child: Spawn.Child
-                do {
-                    child = try Spawn.launch("/usr/bin/ssh", arguments,
-                                             stdout: background ? .null : .pipe,
-                                             stderr: background ? .file(errorFile.path(percentEncoded: false)) : .pipe)
-                } catch {
-                    continuation.resume(throwing: error)
-                    return
-                }
-                var output = Data(), errors = Data()
-                if let out = child.stdout, let err = child.stderr {
-                    let group = DispatchGroup()
-                    let errorBox = DataBox()
-                    group.enter()
-                    DispatchQueue.global().async {
-                        errorBox.data = err.readDataToEndOfFile()
-                        group.leave()
-                    }
-                    output = out.readDataToEndOfFile()
-                    group.wait()
-                    errors = errorBox.data
-                }
-                let status = Spawn.wait(child.pid)
-                if background {
-                    errors = (try? Data(contentsOf: errorFile)) ?? Data()
-                    try? FileManager.default.removeItem(at: errorFile)
-                }
-                if status == 0 {
-                    continuation.resume(returning: String(decoding: output, as: UTF8.self))
-                } else {
-                    continuation.resume(throwing: DockerError.command(status: status, message: String(decoding: errors, as: UTF8.self)))
-                }
-            }
+        let errorFile = FileManager.default.temporaryDirectory.appending(path: "porthole-ssh-\(UUID().uuidString).txt")
+        defer { if background { try? FileManager.default.removeItem(at: errorFile) } }
+        let output = try await Shell.run("/usr/bin/ssh", arguments,
+                                         options: sshOptions(stdout: background ? .discard : .capture,
+                                                             stderr: background ? .file(errorFile) : .capture))
+        guard output.succeeded else {
+            let errors = background ? (try? Data(contentsOf: errorFile)) ?? Data() : output.stderr
+            throw DockerError.command(status: output.status, message: String(decoding: errors, as: UTF8.self))
         }
+        return output.text
+    }
+
+    /// ssh starts the way Terminal starts it: it disclaims Porthole as its responsible
+    /// process. macOS then judges ssh's network access on its own, so Local Network
+    /// privacy (tied to each build of the app) never blocks it, and a rebuild doesn't
+    /// need permission again.
+    static func sshOptions(input: Shell.Input = .none, stdout: Shell.Destination = .capture,
+                           stderr: Shell.Destination = .capture) -> Shell.Options {
+        Shell.Options(input: input, stdout: stdout, stderr: stderr, disclaimsResponsibility: true)
     }
 
     /// Single quotes for the remote shell.
@@ -333,68 +306,3 @@ public actor SSHDocker: DockerClient {
     }
 }
 
-private final class DataBox: @unchecked Sendable {
-    var data = Data()
-}
-
-/// The ssh process behind a stream, so cancelling can stop it.
-private final class ProcessBox: @unchecked Sendable {
-    private let lock = NSLock()
-    private var pid: pid_t?
-    private var stdin: FileHandle?
-    private var cancelled = false
-
-    /// False when the stream was already cancelled; the process is stopped.
-    func set(_ pid: pid_t, stdin: FileHandle? = nil) -> Bool {
-        lock.withLock {
-            if cancelled {
-                try? stdin?.close()
-                kill(pid, SIGTERM)
-                return false
-            }
-            self.pid = pid
-            self.stdin = stdin
-            return true
-        }
-    }
-
-    /// The process was reaped: its pid may belong to another process now.
-    func finished() {
-        lock.withLock {
-            pid = nil
-            try? stdin?.close()
-            stdin = nil
-        }
-    }
-
-    func cancel() {
-        lock.withLock {
-            cancelled = true
-            // End of file first, so the server's side ends even if the signal races.
-            try? stdin?.close()
-            stdin = nil
-            if let pid { kill(pid, SIGTERM) }
-        }
-    }
-}
-
-/// Splits a pipe's output into lines as it arrives, with CRLF endings.
-enum LineReader {
-    static func read(_ handle: FileHandle, line: (String) -> Void) {
-        var buffer = Data()
-        while true {
-            let chunk = handle.availableData   // blocks until something arrives; empty at the end
-            if chunk.isEmpty { break }
-            buffer.append(chunk)
-            var start = buffer.startIndex
-            while let newline = buffer[start...].firstIndex(of: 0x0A) {
-                var end = newline
-                if end > start, buffer[buffer.index(before: end)] == 0x0D { end = buffer.index(before: end) }
-                line(String(decoding: buffer[start..<end], as: UTF8.self))
-                start = buffer.index(after: newline)
-            }
-            buffer.removeSubrange(buffer.startIndex..<start)
-        }
-        if !buffer.isEmpty { line(String(decoding: buffer, as: UTF8.self)) }
-    }
-}

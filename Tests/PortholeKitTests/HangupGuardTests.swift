@@ -1,9 +1,12 @@
 import Foundation
+import ProcessKit
 import Testing
 @testable import PortholeKit
 
 /// The guard runs as the server's shell would run it: `bash -c`, with stdin
-/// the SSH channel. Here the channel is a pipe this test holds open.
+/// the SSH channel. Here the channel is a pipe this test holds open and closes
+/// by itself: ProcessKit closes a command's stdin only while it stops it, which
+/// would test the signal, not the guard.
 @Suite("Remote commands end with their channel")
 struct HangupGuardTests {
     private func start(_ command: String) throws -> (Process, Pipe) {
@@ -19,13 +22,7 @@ struct HangupGuardTests {
     }
 
     private func running(_ marker: String) -> Bool {
-        let pgrep = Process()
-        pgrep.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
-        pgrep.arguments = ["-f", marker]
-        pgrep.standardOutput = FileHandle.nullDevice
-        try? pgrep.run()
-        pgrep.waitUntilExit()
-        return pgrep.terminationStatus == 0
+        (try? Shell.runSync("/usr/bin/pgrep", ["-f", marker]))?.succeeded == true
     }
 
     private func waitUntil(_ seconds: Double, _ done: () -> Bool) async -> Bool {
@@ -61,5 +58,20 @@ struct HangupGuardTests {
         #expect(await waitUntil(3) { !process.isRunning })
         #expect(process.terminationStatus == 0)
         try? stdin.fileHandleForWriting.close()
+    }
+}
+
+@Suite("SSH failures")
+struct SSHFailureTests {
+    @Test("A server that can't be reached fails with ssh's own words and status 255")
+    func unreachable() async throws {
+        // .invalid never resolves: ssh's -f master fails, and its error file is read.
+        let docker = SSHDocker(target: "porthole-test.invalid")
+        await #expect {
+            _ = try await docker.containers()
+        } throws: { error in
+            guard case DockerError.command(let status, let message) = error else { return false }
+            return status == 255 && message.contains("porthole-test.invalid")
+        }
     }
 }

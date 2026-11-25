@@ -1,4 +1,5 @@
 import Foundation
+import ProcessKit
 import Testing
 @testable import PortholeKit
 
@@ -28,15 +29,11 @@ struct ClearCommandTests {
             try body.write(toFile: path, atomically: true, encoding: .utf8)
             try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: path)
         }
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/bin/bash")
-        process.arguments = ["-c", SSHDocker.clearCommand(names)]
-        process.environment = ["PATH": "\(dir.path):/usr/bin:/bin"]
-        process.standardError = FileHandle.nullDevice
-        try process.run()
-        process.waitUntilExit()
+        let output = try Shell.runSync("/bin/bash", ["-c", SSHDocker.clearCommand(names)],
+                                       options: Shell.Options(environment: ["PATH": "\(dir.path):/usr/bin:/bin"],
+                                                              inheritsEnvironment: false, stderr: .discard))
         let calls = (try? String(contentsOfFile: log, encoding: .utf8))?.split(separator: "\n").map(String.init) ?? []
-        return (calls.filter { !$0.hasPrefix("docker inspect") }, process.terminationStatus)
+        return (calls.filter { !$0.hasPrefix("docker inspect") }, output.status)
     }
 
     @Test("A running container stops, its log empties, then it starts again")
