@@ -176,12 +176,3 @@ enum HelpTopic: String, CaseIterable, Identifiable {
     ]
 }
 
-/// Help › Porthole Help, which needs the scene's openWindow.
-struct HelpMenuItem: View {
-    @Environment(\.openWindow) private var openWindow
-
-    var body: some View {
-        Button("Porthole Help") { openWindow(id: "help") }
-            .keyboardShortcut("?", modifiers: .command)
-    }
-}

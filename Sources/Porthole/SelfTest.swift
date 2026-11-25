@@ -15,6 +15,9 @@ extension SelfTest {
             _ = await wait { model.connection == .connected }
             check("connects and lists the sample containers", model.containers.count == 7, "\(model.containers.count)")
             check("opens on the overview", model.page == .overview)
+            let issue = RepositoryLinks(repository: "matguitarist/Porthole").newIssue(app: "Porthole").absoluteString
+            check("Help › Report a Problem opens a new GitHub issue with the version and macOS filled in",
+                  issue.hasPrefix("https://github.com/matguitarist/Porthole/issues/new?body=") && issue.contains("macOS"), issue)
             _ = await wait { model.problemsScanned != nil && !model.hostLoad.cpu.isEmpty && model.hostInfo != nil }
             check("the overview shows the server's load", !model.hostLoad.cpu.isEmpty && model.hostLoad.memoryTotal > 0)
             await check("shows network and disk activity, and I/O wait", within: .seconds(5)) {

@@ -43,6 +43,16 @@
         }
       }
     },
+    "%@ Help": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aide %@"
+          }
+        }
+      }
+    },
     "%@ crashed": {
       "localizations": {
         "fr": {
@@ -105,6 +115,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "%1$@ sur %2$@"
+          }
+        }
+      }
+    },
+    "%@ on GitHub": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ sur GitHub"
           }
         }
       }
@@ -667,6 +687,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Une icône d’état avec la charge du serveur et ce qui demande votre attention"
+          }
+        }
+      }
+    },
+    "About %@": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À propos de %@"
           }
         }
       }
@@ -2469,16 +2499,6 @@
         }
       }
     },
-    "Porthole on GitHub": {
-      "localizations": {
-        "fr": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Porthole sur GitHub"
-          }
-        }
-      }
-    },
     "Porthole pulls the new image and recreates the container from its Unraid template, as Unraid's Update button does. It's down for a moment, and its log starts over.": {
       "localizations": {
         "fr": {
@@ -2915,6 +2935,16 @@
           "stringUnit": {
             "state": "translated",
             "value": "Afficher les dernières lignes"
+          }
+        }
+      }
+    },
+    "Show Log": {
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Afficher le journal"
           }
         }
       }
@@ -3545,12 +3575,12 @@
         }
       }
     },
-    "What’s New in Porthole": {
+    "What’s New in %@": {
       "localizations": {
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nouveautés de Porthole"
+            "value": "Nouveautés de %@"
           }
         }
       }

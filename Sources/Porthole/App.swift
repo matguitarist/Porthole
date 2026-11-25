@@ -38,10 +38,6 @@ struct PortholeApp: App {
             SidebarCommands()
             ToolbarCommands()
             CommandGroup(replacing: .newItem) {}
-            CommandGroup(after: .appInfo) {
-                Button("Check for Updates…") { Updater.shared.checkForUpdates() }
-                    .disabled(!Updater.shared.isAvailable)
-            }
             CommandGroup(before: .sidebar) {
                 Button("Overview", systemImage: "gauge.with.dots.needle.33percent") { model.page = .overview }
                     .keyboardShortcut("0")
@@ -100,14 +96,9 @@ struct PortholeApp: App {
                 .keyboardShortcut("o")
                 .disabled(model.webUI() == nil)
             }
-            CommandGroup(replacing: .help) {
-                HelpMenuItem()
-                Divider()
-                Button("Porthole on GitHub") { NSWorkspace.shared.open(Links.repository) }
-                Button("What’s New in Porthole") { NSWorkspace.shared.open(Links.releaseNotes) }
-                Divider()
-                Button("Report a Problem…") { NSWorkspace.shared.open(Links.newIssue) }
-            }
+            StandardCommands(app: "Porthole", repository: "matguitarist/Porthole",
+                             updates: AppUpdates(isAvailable: Updater.shared.isAvailable) { Updater.shared.checkForUpdates() },
+                             help: .window("help"))
         }
 
         Window("Porthole Help", id: "help") {
